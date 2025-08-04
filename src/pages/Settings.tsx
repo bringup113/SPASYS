@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSettingsContext } from '../context/SettingsContext';
 import { Settings as SettingsIcon, Clock, Globe, DollarSign } from 'lucide-react';
 import Notification from '../components/Notification';
@@ -8,10 +8,10 @@ export default function Settings() {
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' | 'warning' });
   
   // 显示通知
-  const showNotification = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
+  const showNotification = useCallback((message: string, type: 'success' | 'error' | 'warning' = 'success') => {
     setNotification({ show: true, message, type });
     setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 3000);
-  };
+  }, []);
   
   // 默认设置，防止初始化时undefined
   const defaultSettings = {
@@ -42,13 +42,13 @@ export default function Settings() {
     baseCurrencySymbol: businessSettings?.baseCurrencySymbol || defaultSettings.baseCurrencySymbol
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     updateBusinessSettings(formData);
     showNotification('设置已保存！', 'success');
-  };
+  }, [formData, updateBusinessSettings, showNotification]);
 
-  const handle24HourChange = (checked: boolean) => {
+  const handle24HourChange = useCallback((checked: boolean) => {
     setFormData(prev => ({
       ...prev,
       businessHours: {
@@ -59,7 +59,7 @@ export default function Settings() {
         newDayStartTime: checked ? '20:00' : prev.businessHours.newDayStartTime
       }
     }));
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

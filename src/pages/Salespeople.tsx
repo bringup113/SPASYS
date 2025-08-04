@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useSalespersonContext } from '../context/SalespersonContext';
 import { useSettingsContext } from '../context/SettingsContext';
 import { Salesperson } from '../types';
@@ -17,7 +17,7 @@ export default function Salespeople() {
     commissionRate: 0
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
       updateSalesperson(editingId, formData);
@@ -27,9 +27,9 @@ export default function Salespeople() {
     }
     setFormData({ name: '', commissionType: 'percentage', commissionRate: 0 });
     setShowModal(false);
-  };
+  }, [editingId, formData, updateSalesperson, addSalesperson]);
 
-  const handleEdit = (salesperson: Salesperson) => {
+  const handleEdit = useCallback((salesperson: Salesperson) => {
     setEditingId(salesperson.id);
     setFormData({
       name: salesperson.name,
@@ -37,19 +37,19 @@ export default function Salespeople() {
       commissionRate: salesperson.commissionRate
     });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setEditingId(null);
     setFormData({ name: '', commissionType: 'percentage', commissionRate: 0 });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setEditingId(null);
     setShowModal(false);
     setFormData({ name: '', commissionType: 'percentage', commissionRate: 0 });
-  };
+  }, []);
 
 
 

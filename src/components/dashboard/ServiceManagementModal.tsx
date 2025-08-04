@@ -27,7 +27,7 @@ interface ServiceManagementModalProps {
   updateTechnicianStatus: (id: string, status: any) => void;
   deleteRoom: (id: string) => void;
   showNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
-  getServiceName: (serviceId: string) => string;
+  getServiceName: (serviceId: string, serviceNameSnapshot?: string) => string;
   getTechnicianName: (technicianId: string) => string;
   handleDeleteItem: (index: number, item: OrderItem) => void;
   handleCheckout: () => Promise<void>;
@@ -100,7 +100,7 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
       companyCommissionRate: companyCommissionRule?.commissionRate
     };
     
-    const updatedItems = [...currentOrder.items, newItem];
+    const updatedItems = [...(currentOrder?.items || []), newItem];
     const newTotal = updatedItems.reduce((sum: number, item: OrderItem) => sum + item.price, 0);
     
     // 直接更新本地状态
@@ -113,35 +113,35 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
     // 重置选择状态
     setSelectedService(null);
     setModalStep('service');
-  }, [selectedService, companyCommissionRules, currentOrder.items, setCurrentOrder, setSelectedService, setModalStep]);
+  }, [selectedService, companyCommissionRules, currentOrder?.items, setCurrentOrder, setSelectedService, setModalStep]);
 
   // 处理完成并结账
   const handleFinishAndCheckout = useCallback(async () => {
-    if (currentOrder.items.length === 0) {
+    if (!currentOrder?.items || currentOrder?.items.length === 0) {
       showNotification('请先添加至少一项服务', 'error');
       return;
     }
     
     // 如果是临时订单，先创建真实订单
-    if (currentOrder.id.startsWith('temp-')) {
+    if (currentOrder?.id?.startsWith('temp-')) {
       try {
         const newOrder = {
-          roomId: currentOrder.roomId,
-          roomName: currentOrder.roomName,
-          customerName: currentOrder.customerName,
-          customerPhone: currentOrder.customerPhone,
+          roomId: currentOrder?.roomId,
+          roomName: currentOrder?.roomName,
+          customerName: currentOrder?.customerName,
+          customerPhone: currentOrder?.customerPhone,
           status: 'in_progress' as OrderStatus,
-          items: currentOrder.items,
-          totalAmount: currentOrder.totalAmount,
-          notes: currentOrder.notes
+          items: currentOrder?.items || [],
+          totalAmount: currentOrder?.totalAmount || 0,
+          notes: currentOrder?.notes
         };
         
         const createdOrder = await addOrder(newOrder);
-        await updateRoom(currentOrder.roomId, { status: 'occupied' });
+        await updateRoom(currentOrder?.roomId, { status: 'occupied' });
         
         // 更新所有相关技师状态为忙碌
         await Promise.all(
-          currentOrder.items.map((item: OrderItem) => 
+          (currentOrder?.items || []).map((item: OrderItem) => 
             item.technicianId ? updateTechnicianStatus(item.technicianId, 'busy') : Promise.resolve()
           )
         );
@@ -155,14 +155,14 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
     } else {
       // 如果订单已存在，更新订单项目到数据库
       try {
-        await updateOrder(currentOrder.id, {
-          items: currentOrder.items,
-          totalAmount: currentOrder.totalAmount
+        await updateOrder(currentOrder?.id, {
+          items: currentOrder?.items || [],
+          totalAmount: currentOrder?.totalAmount || 0
         });
         
         // 更新所有相关技师状态为忙碌
         await Promise.all(
-          currentOrder.items.map((item: OrderItem) => 
+          (currentOrder?.items || []).map((item: OrderItem) => 
             item.technicianId ? updateTechnicianStatus(item.technicianId, 'busy') : Promise.resolve()
           )
         );
@@ -179,40 +179,40 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
     
     // 初始化结账数据
     setCheckoutData({
-      customerName: currentOrder.customerName || '',
-      selectedSalespersonId: currentOrder.items[0]?.salespersonId || '',
-      receivedAmount: currentOrder.receivedAmount ? currentOrder.receivedAmount.toString() : currentOrder.totalAmount.toString()
+      customerName: currentOrder?.customerName || '',
+      selectedSalespersonId: currentOrder?.items?.[0]?.salespersonId || '',
+      receivedAmount: currentOrder?.receivedAmount ? currentOrder?.receivedAmount.toString() : currentOrder?.totalAmount?.toString() || '0'
     });
     setIsCheckoutMode(true);
   }, [currentOrder, addOrder, updateRoom, updateOrder, updateTechnicianStatus, showNotification, setCurrentOrder, setSelectedService, setModalStep, setCheckoutData, setIsCheckoutMode]);
 
   // 处理完成
   const handleFinish = useCallback(async () => {
-    if (currentOrder.items.length === 0) {
+    if (!currentOrder?.items || currentOrder?.items.length === 0) {
       showNotification('请先添加至少一项服务', 'error');
       return;
     }
     
     // 如果是临时订单，先创建真实订单
-    if (currentOrder.id.startsWith('temp-')) {
+    if (currentOrder?.id?.startsWith('temp-')) {
       try {
         const newOrder = {
-          roomId: currentOrder.roomId,
-          roomName: currentOrder.roomName,
-          customerName: currentOrder.customerName,
-          customerPhone: currentOrder.customerPhone,
+          roomId: currentOrder?.roomId,
+          roomName: currentOrder?.roomName,
+          customerName: currentOrder?.customerName,
+          customerPhone: currentOrder?.customerPhone,
           status: 'in_progress' as OrderStatus,
-          items: currentOrder.items,
-          totalAmount: currentOrder.totalAmount,
-          notes: currentOrder.notes
+          items: currentOrder?.items || [],
+          totalAmount: currentOrder?.totalAmount || 0,
+          notes: currentOrder?.notes
         };
         
         const createdOrder = await addOrder(newOrder);
-        await updateRoom(currentOrder.roomId, { status: 'occupied' });
+        await updateRoom(currentOrder?.roomId, { status: 'occupied' });
         
         // 更新所有相关技师状态为忙碌
         await Promise.all(
-          currentOrder.items.map((item: OrderItem) => 
+          (currentOrder?.items || []).map((item: OrderItem) => 
             item.technicianId ? updateTechnicianStatus(item.technicianId, 'busy') : Promise.resolve()
           )
         );
@@ -226,14 +226,14 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
     } else {
       // 如果订单已存在，更新订单项目到数据库
       try {
-        await updateOrder(currentOrder.id, {
-          items: currentOrder.items,
-          totalAmount: currentOrder.totalAmount
+        await updateOrder(currentOrder?.id, {
+          items: currentOrder?.items || [],
+          totalAmount: currentOrder?.totalAmount || 0
         });
         
         // 更新所有相关技师状态为忙碌
         await Promise.all(
-          currentOrder.items.map((item: OrderItem) => 
+          (currentOrder?.items || []).map((item: OrderItem) => 
             item.technicianId ? updateTechnicianStatus(item.technicianId, 'busy') : Promise.resolve()
           )
         );
@@ -259,7 +259,7 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
     setIsCheckoutMode(false);
     
     // 如果是临时订单，直接关闭
-    if (currentOrder.id.startsWith('temp-')) {
+    if (currentOrder?.id?.startsWith('temp-')) {
       setCurrentOrder(null);
     }
     
@@ -292,18 +292,18 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
             <div className="flex items-center justify-between mb-6">
               <h4 className="text-xl font-semibold text-gray-900">当前服务</h4>
               <div className="bg-white px-4 py-2 rounded-full shadow-sm">
-                <span className="text-sm text-gray-600">共 {currentOrder.items.length} 项</span>
+                <span className="text-sm text-gray-600">共 {currentOrder?.items?.length || 0} 项</span>
               </div>
             </div>
             
             <div className="space-y-4">
-              {currentOrder.items.map((item: OrderItem, index: number) => (
+              {currentOrder?.items?.map((item: OrderItem, index: number) => (
                 <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center mb-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-                        <h5 className="font-semibold text-gray-900 text-lg">{getServiceName(item.serviceId)}</h5>
+                        <h5 className="font-semibold text-gray-900 text-lg">{getServiceName(item.serviceId, item.serviceName)}</h5>
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
@@ -327,7 +327,7 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
                 </div>
               ))}
               
-              {currentOrder.items.length === 0 && (
+              {(!currentOrder?.items || currentOrder?.items.length === 0) && (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Package className="h-8 w-8 text-gray-400" />
@@ -339,12 +339,25 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
             
             {/* 总计 */}
             <div className="mt-6 bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-2">
                 <span className="text-lg font-semibold text-gray-900">总计</span>
                 <span className="text-2xl font-bold text-green-600">
-                  {formatCurrency(currentOrder.totalAmount, businessSettings)}
+                  {formatCurrency(currentOrder?.totalAmount || 0, businessSettings)}
                 </span>
               </div>
+              
+              {/* 收款状态显示 */}
+              {currentOrder?.receivedAmount && parseFloat(currentOrder?.receivedAmount) > 0 && (
+                <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                  <span className="text-sm text-gray-600">实收金额</span>
+                  <div className="flex items-center">
+                    <CheckCircle className="h-4 w-4 text-green-600 mr-1" />
+                    <span className="text-lg font-semibold text-green-600">
+                      {formatCurrency(currentOrder.receivedAmount, businessSettings)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -510,39 +523,51 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
                       消费金额
                     </label>
                     <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(currentOrder.totalAmount, businessSettings)}
+                      {formatCurrency(currentOrder?.totalAmount || 0, businessSettings)}
                     </div>
                   </div>
 
                   {/* 实收金额 */}
                   <div>
                     <label className={`block text-sm font-medium mb-2 ${
-                      currentOrder.receivedAmount && parseFloat(currentOrder.receivedAmount) > 0
-                        ? 'text-gray-500'
-                        : !checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0 
-                        ? 'text-red-600' 
-                        : 'text-gray-700'
+                      !checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0 
+                      ? 'text-red-600' 
+                      : 'text-gray-700'
                     }`}>
                       实收金额 {(!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0) && <span className="text-red-500">*</span>}
                     </label>
+                    
+                    {/* 已收款状态显示 */}
+                    {currentOrder?.receivedAmount && parseFloat(currentOrder?.receivedAmount) > 0 && (
+                      <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center text-green-700 text-sm">
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          <span>当前订单已收款: {formatCurrency(currentOrder.receivedAmount, businessSettings)}</span>
+                        </div>
+                      </div>
+                    )}
+                    
                     <input
                       type="number"
                       value={checkoutData.receivedAmount}
-                      onChange={(e) => setCheckoutData((prev: any) => ({ ...prev, receivedAmount: e.target.value }))}
-                      readOnly={currentOrder.receivedAmount && parseFloat(currentOrder.receivedAmount) > 0}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        // 如果当前订单已收款，显示提示
+                        if (currentOrder?.receivedAmount && parseFloat(currentOrder?.receivedAmount) > 0 && newValue !== currentOrder.receivedAmount.toString()) {
+                          showNotification('当前订单已收款，再次输入将修改实收金额', 'warning');
+                        }
+                        setCheckoutData((prev: any) => ({ ...prev, receivedAmount: newValue }));
+                      }}
                       className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
-                        currentOrder.receivedAmount && parseFloat(currentOrder.receivedAmount) > 0
-                          ? 'bg-gray-100 border-gray-300 cursor-not-allowed'
-                          : !checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        !checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
                       }`}
-                      placeholder={currentOrder.receivedAmount && parseFloat(currentOrder.receivedAmount) > 0 ? "已结账，不可修改" : "请输入实收金额"}
+                      placeholder={currentOrder?.receivedAmount && parseFloat(currentOrder?.receivedAmount) > 0 ? "当前已收款，可修改实收金额" : "请输入实收金额"}
                       step="0.01"
                       min="0"
                     />
-                    {(!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0) && 
-                     !(currentOrder.receivedAmount && parseFloat(currentOrder.receivedAmount) > 0) && (
+                    {(!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0) && (
                       <p className="text-red-500 text-sm mt-1">请输入实收金额</p>
                     )}
                   </div>
@@ -568,53 +593,38 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
 
                   {/* 操作按钮 */}
                   <div className="pt-4">
-                    {currentOrder.receivedAmount && parseFloat(currentOrder.receivedAmount) > 0 ? (
-                      // 已付款，只显示完成服务按钮
+                    <div className="space-y-3">
                       <button
                         onClick={() => {
-                          console.log('🔍 完成服务按钮被点击');
-                          handleCompleteServiceOnly();
+                          console.log('🔍 结账按钮被点击');
+                          if (!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0) {
+                            showNotification('请输入实收金额', 'error');
+                            return;
+                          }
+                          handleCheckout();
                         }}
-                        className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
+                        disabled={!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0}
+                        className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        <CreditCard className="h-5 w-5 mr-2" />
+                        仅结账
+                      </button>
+                      <button
+                        onClick={() => {
+                          console.log('🔍 完成服务并结账按钮被点击');
+                          if (!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0) {
+                            showNotification('请输入实收金额', 'error');
+                            return;
+                          }
+                          handleCompleteServiceAndCheckout();
+                        }}
+                        disabled={!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0}
+                        className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
                       >
                         <CheckCircle className="h-5 w-5 mr-2" />
-                        完成服务
+                        完成服务并结账
                       </button>
-                    ) : (
-                      // 未付款，显示结账按钮
-                      <div className="space-y-3">
-                        <button
-                          onClick={() => {
-                            console.log('🔍 结账按钮被点击');
-                            if (!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0) {
-                              showNotification('请输入实收金额', 'error');
-                              return;
-                            }
-                            handleCheckout();
-                          }}
-                          disabled={!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0}
-                          className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
-                        >
-                          <CreditCard className="h-5 w-5 mr-2" />
-                          仅结账
-                        </button>
-                        <button
-                          onClick={() => {
-                            console.log('🔍 完成服务并结账按钮被点击');
-                            if (!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0) {
-                              showNotification('请输入实收金额', 'error');
-                              return;
-                            }
-                            handleCompleteServiceAndCheckout();
-                          }}
-                          disabled={!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0}
-                          className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
-                        >
-                          <CheckCircle className="h-5 w-5 mr-2" />
-                          完成服务并结账
-                        </button>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </>
@@ -626,7 +636,7 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-600">
-              房间: {selectedRoom.name} | 客户: {currentOrder.customerName || '散客'}
+                                  房间: {selectedRoom.name} | 客户: {currentOrder?.customerName || '散客'}
             </div>
             <div className="flex space-x-3">
               {/* 取消按钮 */}

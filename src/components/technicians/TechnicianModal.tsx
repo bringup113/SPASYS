@@ -37,8 +37,6 @@ const TechnicianModal = React.memo(function TechnicianModal({
   onSubmit,
   onFormDataChange
 }: TechnicianModalProps) {
-  if (!show) return null;
-
   const handleFormDataChange = useCallback((field: keyof TechnicianFormData, value: any) => {
     if (field === 'services') {
       onFormDataChange({
@@ -52,6 +50,8 @@ const TechnicianModal = React.memo(function TechnicianModal({
       });
     }
   }, [formData, onFormDataChange]);
+
+  if (!show) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useTechnicianContext } from '../context/TechnicianContext';
 import { useServiceContext } from '../context/ServiceContext';
 import { useSettingsContext } from '../context/SettingsContext';

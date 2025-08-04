@@ -61,8 +61,8 @@ export default function OrdersRefactored() {
   }, []);
 
   // 工具函数包装器
-  const getServiceNameWrapper = useCallback((serviceId: string) => {
-    return getServiceName(serviceId, serviceItems);
+  const getServiceNameWrapper = useCallback((serviceId: string, serviceName?: string) => {
+    return getServiceName(serviceId, serviceItems, serviceName);
   }, [serviceItems]);
 
   const getTechnicianDisplayWrapper = useCallback((technicianId?: string, technicianName?: string) => {
@@ -88,7 +88,8 @@ export default function OrdersRefactored() {
     if (order) {
       const updatedNotes = order.notes ? `${order.notes}\n取消原因: ${cancelReason}` : `取消原因: ${cancelReason}`;
       updateOrder(orderId, {
-        notes: updatedNotes
+        notes: updatedNotes,
+        items: order.items  // 传递完整的订单项目数据，避免清空快照
       });
     }
     
@@ -225,7 +226,7 @@ export default function OrdersRefactored() {
 
       {/* 订单详情模态框 */}
       <OrderDetailModal
-        isOpen={showOrderDetailModal}
+        show={showOrderDetailModal}
         order={selectedOrder}
         businessSettings={businessSettings}
         companyCommissionRules={companyCommissionRules}
@@ -235,6 +236,7 @@ export default function OrdersRefactored() {
         }}
         getServiceName={getServiceNameWrapper}
         getRoomName={getRoomNameWrapper}
+        getTechnicianDisplay={getTechnicianDisplayWrapper}
         getStatusColor={getStatusColor}
         getStatusText={getStatusText}
       />

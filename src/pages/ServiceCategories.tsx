@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useServiceContext } from '../context/ServiceContext';
 import { ServiceCategory } from '../types';
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
@@ -12,7 +12,7 @@ export default function ServiceCategories() {
     name: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
       updateServiceCategory(editingId, formData);
@@ -22,27 +22,27 @@ export default function ServiceCategories() {
     }
     setFormData({ name: '' });
     setShowModal(false);
-  };
+  }, [editingId, formData, updateServiceCategory, addServiceCategory]);
 
-  const handleEdit = (category: ServiceCategory) => {
+  const handleEdit = useCallback((category: ServiceCategory) => {
     setEditingId(category.id);
     setFormData({
       name: category.name
     });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setEditingId(null);
     setFormData({ name: '' });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setEditingId(null);
     setShowModal(false);
     setFormData({ name: '' });
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

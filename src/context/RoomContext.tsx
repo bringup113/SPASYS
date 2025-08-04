@@ -48,7 +48,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
         case 'room-created':
           setState((prev: RoomState) => ({
             ...prev,
-            rooms: [...prev.rooms, data.data]
+            rooms: [...prev.rooms, data.data].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'room-updated':
@@ -56,7 +56,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
             ...prev,
             rooms: prev.rooms.map((room: Room) => 
               room.id === data.data.id ? data.data : room
-            )
+            ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'room-deleted':

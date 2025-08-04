@@ -7,13 +7,20 @@ const technicianDisplayCache = new Map<string, any>();
 const roomNameCache = new Map<string, string>();
 
 // 获取服务名称
-export const getServiceName = (serviceId: string, serviceItems: any[] | undefined) => {
-  const cacheKey = `${serviceId}-${serviceItems?.length || 0}`;
+export const getServiceName = (serviceId: string, serviceItems: any[] | undefined, serviceName?: string) => {
+  const cacheKey = `${serviceId}-${serviceName || 'null'}-${serviceItems?.length || 0}`;
   
   if (serviceNameCache.has(cacheKey)) {
     return serviceNameCache.get(cacheKey)!;
   }
   
+  // 优先使用订单中保存的服务名称快照
+  if (serviceName) {
+    serviceNameCache.set(cacheKey, serviceName);
+    return serviceName;
+  }
+  
+  // 如果快照不存在，则从当前服务列表中查找
   const service = serviceItems?.find(s => s.id === serviceId);
   const result = service ? service.name : '未知服务';
   

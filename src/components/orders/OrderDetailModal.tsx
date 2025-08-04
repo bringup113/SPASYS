@@ -6,29 +6,35 @@ import { formatCurrency } from '../../utils/currencyUtils';
 import { CommissionCalculator } from '../../utils/commissionUtils';
 
 interface OrderDetailModalProps {
-  isOpen: boolean;
+  show: boolean;
+  onClose: () => void;
   order: Order | null;
   businessSettings: BusinessSettings | undefined;
   companyCommissionRules: any[] | undefined;
-  onClose: () => void;
-  getServiceName: (serviceId: string) => string;
+  getServiceName: (serviceId: string, serviceName?: string) => string;
   getRoomName: (roomId: string, roomName?: string) => string;
+  getTechnicianDisplay: (technicianId?: string, technicianName?: string) => {
+    text: string;
+    isDeparted: boolean;
+    tooltip: string;
+  };
   getStatusColor: (status: OrderStatus) => string;
   getStatusText: (status: OrderStatus) => string;
 }
 
 const OrderDetailModal = React.memo(function OrderDetailModal({
-  isOpen,
+  show,
+  onClose,
   order,
   businessSettings,
   companyCommissionRules,
-  onClose,
   getServiceName,
   getRoomName,
+  getTechnicianDisplay,
   getStatusColor,
   getStatusText
 }: OrderDetailModalProps) {
-  if (!isOpen || !order) return null;
+  if (!show || !order) return null;
 
   // 计算订单总金额
   const calculateOrderTotal = (order: Order) => {
@@ -189,7 +195,7 @@ const OrderDetailModal = React.memo(function OrderDetailModal({
                   {order.items.map((item, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-gray-900">{getServiceName(item.serviceId)}</span>
+                        <span className="font-medium text-gray-900">{getServiceName(item.serviceId, item.serviceName)}</span>
                         <span className="text-sm text-gray-600">{formatCurrency(item.price, businessSettings)}</span>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">

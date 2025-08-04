@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useSettingsContext } from '../context/SettingsContext';
 import { Country } from '../types';
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
@@ -13,7 +13,7 @@ export default function Countries() {
     remark: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
       updateCountry(editingId, formData);
@@ -23,32 +23,32 @@ export default function Countries() {
     }
     setFormData({ name: '', remark: '' });
     setShowModal(false);
-  };
+  }, [editingId, formData, updateCountry, addCountry]);
 
-  const handleEdit = (country: Country) => {
+  const handleEdit = useCallback((country: Country) => {
     setEditingId(country.id);
     setFormData({
       name: country.name,
       remark: country.remark || ''
     });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setEditingId(null);
     setFormData({ name: '', remark: '' });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setEditingId(null);
     setShowModal(false);
     setFormData({ name: '', remark: '' });
-  };
+  }, []);
 
-  const handleDelete = (country: Country) => {
+  const handleDelete = useCallback((country: Country) => {
     setDeletingCountry(country);
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

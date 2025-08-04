@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSettingsContext } from '../context/SettingsContext';
 import { CompanyCommissionRule } from '../types';
 import { Plus, Edit, Trash2, Check, X, Shield } from 'lucide-react';
@@ -13,10 +13,10 @@ export default function CompanyCommissionRules() {
   const [notification, setNotification] = useState({ show: false, message: '', type: 'error' as 'success' | 'error' | 'warning' });
   
   // 显示通知
-  const showNotification = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
+  const showNotification = useCallback((message: string, type: 'success' | 'error' | 'warning' = 'success') => {
     setNotification({ show: true, message, type });
     setTimeout(() => setNotification({ show: false, message: '', type: 'error' }), 3000);
-  };
+  }, []);
   const [formData, setFormData] = useState({
     name: '',
     commissionType: 'profit' as 'none' | 'revenue' | 'profit',
@@ -25,7 +25,7 @@ export default function CompanyCommissionRules() {
     isDefault: false
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (isSubmitting) return; // 防止重复提交
@@ -54,9 +54,9 @@ export default function CompanyCommissionRules() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [editingId, formData, isSubmitting, updateCompanyCommissionRule, addCompanyCommissionRule, showNotification]);
 
-  const handleEdit = (rule: CompanyCommissionRule) => {
+  const handleEdit = useCallback((rule: CompanyCommissionRule) => {
     setEditingId(rule.id);
     setFormData({
       name: rule.name,
@@ -66,9 +66,9 @@ export default function CompanyCommissionRules() {
       isDefault: rule.isDefault
     });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setEditingId(null);
     setFormData({
       name: '',
@@ -78,9 +78,9 @@ export default function CompanyCommissionRules() {
       isDefault: false
     });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setEditingId(null);
     setShowModal(false);
     setFormData({
@@ -90,25 +90,25 @@ export default function CompanyCommissionRules() {
       description: '',
       isDefault: false
     });
-  };
+  }, []);
 
-  const getCommissionTypeText = (type: string) => {
+  const getCommissionTypeText = useCallback((type: string) => {
     switch (type) {
       case 'none': return '不抽成';
       case 'revenue': return '销售额抽成';
       case 'profit': return '利润抽成';
       default: return '未知';
     }
-  };
+  }, []);
 
-  const getCommissionTypeColor = (type: string) => {
+  const getCommissionTypeColor = useCallback((type: string) => {
     switch (type) {
       case 'none': return 'bg-gray-100 text-gray-800';
       case 'revenue': return 'bg-blue-100 text-blue-800';
       case 'profit': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

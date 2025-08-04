@@ -4,7 +4,7 @@ const router = express.Router();
 // 获取所有房间
 router.get('/rooms', async (req, res) => {
   try {
-    const result = await global.pool.query('SELECT * FROM rooms ORDER BY name');
+    const result = await global.pool.query('SELECT * FROM rooms ORDER BY created_at ASC');
     const rooms = result.rows.map(row => ({
       id: row.id,
       name: row.name,

@@ -10,7 +10,7 @@ interface DeleteItemModalProps {
   deletingItem: { index: number; item: OrderItem } | null;
   currentOrder: any;
   businessSettings: any;
-  getServiceName: (serviceId: string) => string;
+  getServiceName: (serviceId: string, serviceName?: string) => string;
 }
 
 const DeleteItemModal = React.memo(function DeleteItemModal({ 
@@ -51,7 +51,7 @@ const DeleteItemModal = React.memo(function DeleteItemModal({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">服务:</span>
-                <span className="font-medium">{getServiceName(item.serviceId)}</span>
+                <span className="font-medium">{getServiceName(item.serviceId, item.serviceName)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">技师:</span>

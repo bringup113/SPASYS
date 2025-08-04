@@ -48,7 +48,7 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
         case 'technician-created':
           setState((prev: TechnicianState) => ({
             ...prev,
-            technicians: [...prev.technicians, data.data]
+            technicians: [...prev.technicians, data.data].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'technician-updated':
@@ -56,7 +56,7 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
             ...prev,
             technicians: prev.technicians.map((technician: Technician) => 
               technician.id === data.data.id ? data.data : technician
-            )
+            ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'technician-deleted':
@@ -70,7 +70,7 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
             ...prev,
             technicians: prev.technicians.map((technician: Technician) => 
               technician.id === data.data.id ? data.data : technician
-            )
+            ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
       }

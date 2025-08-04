@@ -6,7 +6,7 @@ const router = express.Router();
 // 获取所有销售员
 router.get('/salespeople', async (req, res) => {
   try {
-    const result = await global.pool.query('SELECT * FROM salespeople ORDER BY name');
+    const result = await global.pool.query('SELECT * FROM salespeople ORDER BY created_at ASC');
     const salespeople = result.rows.map(row => ({
       id: row.id,
       name: row.name,
@@ -123,7 +123,7 @@ router.delete('/salespeople/:id', async (req, res) => {
 // 获取所有国家
 router.get('/countries', async (req, res) => {
   try {
-    const result = await global.pool.query('SELECT * FROM countries ORDER BY name');
+    const result = await global.pool.query('SELECT * FROM countries ORDER BY created_at ASC');
     const countries = result.rows.map(row => ({
       id: row.id,
       name: row.name,
@@ -234,7 +234,7 @@ router.delete('/countries/:id', async (req, res) => {
 // 获取所有公司分成方案
 router.get('/company-commission-rules', async (req, res) => {
   try {
-    const result = await global.pool.query('SELECT * FROM company_commission_rules ORDER BY name');
+    const result = await global.pool.query('SELECT * FROM company_commission_rules ORDER BY created_at ASC');
     const rules = result.rows.map(row => ({
       id: row.id,
       name: row.name,
@@ -340,10 +340,10 @@ router.delete('/company-commission-rules/:id', async (req, res) => {
       return res.status(400).json({ error: '默认方案不能删除' });
     }
     
-    // 检查是否有关联的技师
-    const technicianResult = await global.pool.query('SELECT COUNT(*) as count FROM technicians WHERE company_commission_rule_id = $1', [id]);
-    if (parseInt(technicianResult.rows[0].count) > 0) {
-      return res.status(400).json({ error: '方案有关联的技师，无法删除' });
+    // 检查是否有关联的技师服务分配
+    const technicianServiceResult = await global.pool.query('SELECT COUNT(*) as count FROM technician_services WHERE company_commission_rule_id = $1', [id]);
+    if (parseInt(technicianServiceResult.rows[0].count) > 0) {
+      return res.status(400).json({ error: '方案有关联的技师服务分配，无法删除' });
     }
 
     const result = await global.pool.query('DELETE FROM company_commission_rules WHERE id = $1 RETURNING *', [id]);

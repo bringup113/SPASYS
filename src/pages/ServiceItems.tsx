@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useServiceContext } from '../context/ServiceContext';
 import { ServiceItem } from '../types';
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
@@ -14,7 +14,7 @@ export default function ServiceItems() {
     categoryId: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
       updateServiceItem(editingId, formData);
@@ -24,9 +24,9 @@ export default function ServiceItems() {
     }
     setFormData({ name: '', duration: 0, categoryId: '' });
     setShowModal(false);
-  };
+  }, [editingId, formData, updateServiceItem, addServiceItem]);
 
-  const handleEdit = (item: ServiceItem) => {
+  const handleEdit = useCallback((item: ServiceItem) => {
     setEditingId(item.id);
     setFormData({
       name: item.name,
@@ -34,24 +34,24 @@ export default function ServiceItems() {
       categoryId: item.categoryId
     });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setEditingId(null);
     setFormData({ name: '', duration: 0, categoryId: '' });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setEditingId(null);
     setShowModal(false);
     setFormData({ name: '', duration: 0, categoryId: '' });
-  };
+  }, []);
 
-  const getCategoryName = (categoryId: string) => {
+  const getCategoryName = useCallback((categoryId: string) => {
     const category = serviceCategories.find(c => c.id === categoryId);
     return category ? category.name : '未分类';
-  };
+  }, [serviceCategories]);
 
   return (
     <div className="space-y-6">

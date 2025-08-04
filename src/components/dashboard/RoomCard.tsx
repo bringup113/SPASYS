@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useServiceContext } from '../../context/ServiceContext';
 import { useTechnicianContext } from '../../context/TechnicianContext';
 import { useSettingsContext } from '../../context/SettingsContext';
-import { AlertTriangle, Timer } from 'lucide-react';
+import { AlertTriangle, Timer, CheckCircle } from 'lucide-react';
 import { OrderItem } from '../../types';
 import { formatCurrency } from '../../utils/currencyUtils';
 
@@ -19,7 +19,13 @@ const RoomCard = React.memo(function RoomCard({ room, onRoomClick, currentOrder 
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isOverdue, setIsOverdue] = useState(false);
 
-  const getServiceName = useCallback((serviceId: string) => {
+  const getServiceName = useCallback((serviceId: string, serviceName?: string) => {
+    // 优先使用服务名称快照
+    if (serviceName) {
+      return serviceName;
+    }
+    
+    // 如果快照不存在，则从当前服务列表中查找
     const service = serviceItems?.find((s: any) => s.id === serviceId);
     return service ? service.name : '未知服务';
   }, [serviceItems]);
@@ -62,12 +68,7 @@ const RoomCard = React.memo(function RoomCard({ room, onRoomClick, currentOrder 
     return 'bg-gray-100 border-gray-300';
   }, [room.status]);
 
-  const getStatusText = useCallback(() => {
-    if (room.status === 'available') return '可用';
-    if (room.status === 'occupied') return '使用中';
-    if (room.status === 'maintenance') return '维护中';
-    return room.status;
-  }, [room.status]);
+
 
   return (
     <div 
@@ -100,6 +101,14 @@ const RoomCard = React.memo(function RoomCard({ room, onRoomClick, currentOrder 
           {formatTime(timeLeft)}
         </div>
       )}
+      
+      {/* 收款状态标识 */}
+      {currentOrder && currentOrder.receivedAmount && parseFloat(currentOrder.receivedAmount) > 0 && (
+        <div className="absolute top-8 -right-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full px-3 py-2 text-xs shadow-lg">
+          <CheckCircle className="h-3 w-3 inline mr-1" />
+          已收款
+        </div>
+      )}
 
       <div className="relative z-10">
         <div className="text-center mb-4">
@@ -109,7 +118,6 @@ const RoomCard = React.memo(function RoomCard({ room, onRoomClick, currentOrder 
             </h3>
           </div>
           <div className="flex items-center justify-center space-x-2">
-            <p className="text-sm font-medium text-gray-700">{getStatusText()}</p>
             {room.isTemporary && (
               <span className="inline-block bg-gradient-to-r from-purple-400 to-purple-600 text-white text-xs px-3 py-1 rounded-full font-medium shadow-sm">
                 临时
@@ -127,7 +135,7 @@ const RoomCard = React.memo(function RoomCard({ room, onRoomClick, currentOrder 
                 return (
                   <div key={index} className="bg-white bg-opacity-90 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-50 shadow-sm">
                     <div className="flex justify-between items-start mb-2">
-                      <span className="font-semibold text-gray-900 text-sm">{getServiceName(item.serviceId)}</span>
+                      <span className="font-semibold text-gray-900 text-sm">{getServiceName(item.serviceId, item.serviceName)}</span>
                       <span className="text-sm font-medium text-blue-600">{formatCurrency(item.price, businessSettings)}</span>
                     </div>
                     <div className="flex items-center justify-between">

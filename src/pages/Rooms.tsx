@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useRoomContext } from '../context/RoomContext';
 import { useOrderContext } from '../context/OrderContext';
 import { Room } from '../types';
@@ -18,7 +18,7 @@ export default function Rooms() {
     description: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     
     // 检查是否有未完成的订单
@@ -48,9 +48,9 @@ export default function Rooms() {
     }
     setFormData({ name: '', status: 'available', description: '' });
     setShowModal(false);
-  };
+  }, [editingId, rooms, orders, formData, updateRoom, addRoom]);
 
-  const handleEdit = (room: Room) => {
+  const handleEdit = useCallback((room: Room) => {
     setEditingId(room.id);
     setFormData({
       name: room.name,
@@ -58,37 +58,37 @@ export default function Rooms() {
       description: room.description || ''
     });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setEditingId(null);
     setFormData({ name: '', status: 'available', description: '' });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setEditingId(null);
     setShowModal(false);
     setFormData({ name: '', status: 'available', description: '' });
-  };
+  }, []);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case 'available': return 'bg-green-100 text-green-800';
       case 'occupied': return 'bg-orange-100 text-orange-800';
       case 'maintenance': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  };
+  }, []);
 
-  const getStatusText = (status: string) => {
+  const getStatusText = useCallback((status: string) => {
     switch (status) {
       case 'available': return '可用';
       case 'occupied': return '使用中';
       case 'maintenance': return '维护中';
       default: return status;
     }
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

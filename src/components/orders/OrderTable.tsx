@@ -1,20 +1,20 @@
 import React from 'react';
-import { Order, BusinessSettings } from '../../types';
+import { Order, OrderStatus, BusinessSettings } from '../../types';
 import OrderRow from './OrderRow';
 
 interface OrderTableProps {
   currentOrders: Order[];
   businessSettings: BusinessSettings | undefined;
-  getServiceName: (serviceId: string) => string;
+  getServiceName: (serviceId: string, serviceName?: string) => string;
   getRoomName: (roomId: string, roomName?: string) => string;
   getTechnicianDisplay: (technicianId?: string, technicianName?: string) => {
     text: string;
     isDeparted: boolean;
     tooltip: string;
   };
-  getStatusColor: (status: any) => string;
-  getStatusText: (status: any) => string;
-  getStatusIcon: (status: any) => any;
+  getStatusColor: (status: OrderStatus) => string;
+  getStatusText: (status: OrderStatus) => string;
+  getStatusIcon: (status: OrderStatus) => any;
   onViewDetail: (order: Order) => void;
   onCancelOrder: (orderId: string) => void;
   // 分页相关

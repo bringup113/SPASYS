@@ -15,8 +15,6 @@ const DeleteTechnicianModal = React.memo(function DeleteTechnicianModal({
 }: DeleteTechnicianModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   
-  if (!technician) return null;
-  
   const handleConfirm = useCallback(async () => {
     setIsDeleting(true);
     try {
@@ -25,6 +23,8 @@ const DeleteTechnicianModal = React.memo(function DeleteTechnicianModal({
       setIsDeleting(false);
     }
   }, [onConfirm]);
+  
+  if (!technician) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">

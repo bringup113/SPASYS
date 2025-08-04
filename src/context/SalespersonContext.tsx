@@ -47,7 +47,7 @@ export function SalespersonProvider({ children }: { children: ReactNode }) {
         case 'salesperson-created':
           setState((prev: SalespersonState) => ({
             ...prev,
-            salespeople: [...prev.salespeople, data.data]
+            salespeople: [...prev.salespeople, data.data].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'salesperson-updated':
@@ -55,7 +55,7 @@ export function SalespersonProvider({ children }: { children: ReactNode }) {
             ...prev,
             salespeople: prev.salespeople.map((salesperson: Salesperson) => 
               salesperson.id === data.data.id ? data.data : salesperson
-            )
+            ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'salesperson-deleted':

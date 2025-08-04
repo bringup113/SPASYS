@@ -64,7 +64,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         case 'country-created':
           setState((prev: SettingsState) => ({
             ...prev,
-            countries: [...prev.countries, data.data]
+            countries: [...prev.countries, data.data].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'country-updated':
@@ -72,7 +72,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             ...prev,
             countries: prev.countries.map((country: Country) => 
               country.id === data.data.id ? data.data : country
-            )
+            ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'country-deleted':
@@ -84,7 +84,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         case 'company-commission-rule-created':
           setState((prev: SettingsState) => ({
             ...prev,
-            companyCommissionRules: [...prev.companyCommissionRules, data.data]
+            companyCommissionRules: [...prev.companyCommissionRules, data.data].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'company-commission-rule-updated':
@@ -92,7 +92,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             ...prev,
             companyCommissionRules: prev.companyCommissionRules.map((rule: CompanyCommissionRule) => 
               rule.id === data.data.id ? data.data : rule
-            )
+            ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'company-commission-rule-deleted':

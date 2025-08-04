@@ -1,12 +1,12 @@
 import React from 'react';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, CheckCircle } from 'lucide-react';
 import { Order, OrderStatus, BusinessSettings } from '../../types';
 import { formatCurrency } from '../../utils/currencyUtils';
 
 interface OrderRowProps {
   order: Order;
   businessSettings: BusinessSettings | undefined;
-  getServiceName: (serviceId: string) => string;
+  getServiceName: (serviceId: string, serviceName?: string) => string;
   getRoomName: (roomId: string, roomName?: string) => string;
   getTechnicianDisplay: (technicianId?: string, technicianName?: string) => {
     text: string;
@@ -88,7 +88,7 @@ const OrderRow = React.memo(function OrderRow({
             // 统计相同服务的数量
             const serviceCounts = new Map<string, number>();
             order.items.forEach(item => {
-              const serviceName = getServiceName(item.serviceId);
+              const serviceName = getServiceName(item.serviceId, item.serviceName);
               serviceCounts.set(serviceName, (serviceCounts.get(serviceName) || 0) + 1);
             });
             
@@ -105,7 +105,19 @@ const OrderRow = React.memo(function OrderRow({
         {formatCurrency(calculateOrderTotal(order), businessSettings)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center">
-        {order.receivedAmount ? formatCurrency(order.receivedAmount, businessSettings) : '-'}
+        {order.receivedAmount ? (
+          <div className="flex flex-col items-center space-y-1">
+            <div className="flex items-center">
+              <CheckCircle className="h-3 w-3 text-green-600 mr-1" />
+              <span className="text-xs text-green-600">已收款</span>
+            </div>
+            <span className="text-sm font-medium text-gray-900">
+              {formatCurrency(order.receivedAmount, businessSettings)}
+            </span>
+          </div>
+        ) : (
+          <span className="text-gray-500">-</span>
+        )}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-center">
         <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>

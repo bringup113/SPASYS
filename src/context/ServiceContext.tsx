@@ -59,7 +59,7 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
         case 'service-category-created':
           setState((prev: ServiceState) => ({
             ...prev,
-            serviceCategories: [...prev.serviceCategories, data.data]
+            serviceCategories: [...prev.serviceCategories, data.data].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'service-category-updated':
@@ -67,7 +67,7 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
             ...prev,
             serviceCategories: prev.serviceCategories.map((category: ServiceCategory) => 
               category.id === data.data.id ? data.data : category
-            )
+            ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'service-category-deleted':
@@ -79,7 +79,7 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
         case 'service-item-created':
           setState((prev: ServiceState) => ({
             ...prev,
-            serviceItems: [...prev.serviceItems, data.data]
+            serviceItems: [...prev.serviceItems, data.data].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'service-item-updated':
@@ -87,7 +87,7 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
             ...prev,
             serviceItems: prev.serviceItems.map((item: ServiceItem) => 
               item.id === data.data.id ? data.data : item
-            )
+            ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
           }));
           break;
         case 'service-item-deleted':

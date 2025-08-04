@@ -4,7 +4,7 @@ const router = express.Router();
 // 获取所有服务分类
 router.get('/service-categories', async (req, res) => {
   try {
-    const result = await global.pool.query('SELECT * FROM service_categories ORDER BY name');
+    const result = await global.pool.query('SELECT * FROM service_categories ORDER BY created_at ASC');
     const categories = result.rows.map(row => ({
       id: row.id,
       name: row.name,
@@ -120,7 +120,7 @@ router.get('/service-items', async (req, res) => {
       SELECT si.*, sc.name as category_name 
       FROM service_items si 
       LEFT JOIN service_categories sc ON si.category_id = sc.id 
-      ORDER BY si.name
+      ORDER BY si.created_at ASC
     `);
     const items = result.rows.map(row => ({
       id: row.id,

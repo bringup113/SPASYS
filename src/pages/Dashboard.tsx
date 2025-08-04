@@ -138,7 +138,13 @@ export default function Dashboard() {
     }
   }, [orders, showNotification]);
 
-  const getServiceName = useCallback((serviceId: string) => {
+  const getServiceName = useCallback((serviceId: string, serviceName?: string) => {
+    // 优先使用服务名称快照
+    if (serviceName) {
+      return serviceName;
+    }
+    
+    // 如果快照不存在，则从当前服务列表中查找
     const service = serviceItems?.find(s => s.id === serviceId);
     return service ? service.name : '未知服务';
   }, [serviceItems]);
@@ -286,13 +292,27 @@ export default function Dashboard() {
         notes: '已结账，服务进行中'
       });
 
+      // 立即更新本地状态，以便在界面上立即显示已收款金额
+      setCurrentOrder((prev: any) => prev ? {
+        ...prev,
+        receivedAmount: receivedAmount,
+        customerName: checkoutData.customerName,
+        items: updatedItems,
+        notes: '已结账，服务进行中'
+      } : null);
+
+      // 更新结账数据，显示已收款的金额
+      setCheckoutData((prev: any) => ({
+        ...prev,
+        receivedAmount: receivedAmount.toString()
+      }));
+
       showNotification('结账成功！', 'success');
-      resetCheckoutState();
     } catch (error) {
       console.error('结账失败:', error);
       showNotification('结账失败，请重试', 'error');
     }
-  }, [currentOrder, checkoutData, salespeople, companyCommissionRules, updateOrder, showNotification, resetCheckoutState]);
+  }, [currentOrder, checkoutData, salespeople, companyCommissionRules, updateOrder, showNotification]);
 
   // 处理完成服务
   const handleCompleteServiceOnly = useCallback(async () => {
@@ -412,6 +432,22 @@ export default function Dashboard() {
         // 更新技师状态
         ...currentOrder.items.map((item: OrderItem) => item.technicianId ? updateTechnicianStatus(item.technicianId, 'available') : Promise.resolve())
       ]);
+
+      // 立即更新本地状态，以便在界面上立即显示已收款金额
+      setCurrentOrder((prev: any) => prev ? {
+        ...prev,
+        receivedAmount: receivedAmount,
+        customerName: checkoutData.customerName,
+        items: updatedItems,
+        status: 'completed',
+        completedAt: new Date().toISOString()
+      } : null);
+
+      // 更新结账数据，显示已收款的金额
+      setCheckoutData((prev: any) => ({
+        ...prev,
+        receivedAmount: receivedAmount.toString()
+      }));
 
       showNotification('服务完成并结账成功！', 'success');
       resetCheckoutState();

@@ -116,14 +116,38 @@ app.get('/api/app-state', async (req, res) => {
       companyCommissionRulesResult,
       businessSettingsResult
     ] = await Promise.all([
-      global.pool.query('SELECT * FROM rooms ORDER BY name'),
-      global.pool.query('SELECT * FROM service_categories ORDER BY name'),
-      global.pool.query('SELECT * FROM service_items ORDER BY name'),
-      global.pool.query('SELECT * FROM technicians ORDER BY employee_id'),
-      global.pool.query('SELECT * FROM salespeople ORDER BY name'),
-      global.pool.query('SELECT * FROM countries ORDER BY name'),
-      global.pool.query('SELECT * FROM orders ORDER BY created_at DESC'),
-      global.pool.query('SELECT * FROM company_commission_rules ORDER BY name'),
+      global.pool.query('SELECT * FROM rooms ORDER BY created_at ASC'),
+      global.pool.query('SELECT * FROM service_categories ORDER BY created_at ASC'),
+      global.pool.query('SELECT * FROM service_items ORDER BY created_at ASC'),
+      global.pool.query('SELECT * FROM technicians ORDER BY created_at ASC'),
+      global.pool.query('SELECT * FROM salespeople ORDER BY created_at ASC'),
+      global.pool.query('SELECT * FROM countries ORDER BY created_at ASC'),
+      global.pool.query(`
+        SELECT o.*, 
+               json_agg(
+                 json_build_object(
+                   'serviceId', oi.service_id,
+                   'serviceName', oi.service_name,
+                   'technicianId', oi.technician_id,
+                   'technicianName', oi.technician_name,
+                   'price', oi.price,
+                   'technicianCommission', oi.technician_commission,
+                   'salespersonId', oi.salesperson_id,
+                   'salespersonName', oi.salesperson_name,
+                   'salespersonCommission', oi.salesperson_commission,
+                   'companyCommissionRuleId', oi.company_commission_rule_id,
+                   'companyCommissionRuleName', oi.company_commission_rule_name,
+                   'companyCommissionType', oi.company_commission_type,
+                   'companyCommissionRate', oi.company_commission_rate,
+                   'companyCommissionAmount', oi.company_commission_amount
+                 ) ORDER BY oi.id
+               ) as items
+        FROM orders o
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        GROUP BY o.id
+        ORDER BY o.created_at ASC
+      `),
+              global.pool.query('SELECT * FROM company_commission_rules ORDER BY created_at ASC'),
       global.pool.query('SELECT * FROM business_settings WHERE id = \'default-settings\'')
     ]);
 
@@ -133,7 +157,7 @@ app.get('/api/app-state', async (req, res) => {
              si.name as service_name
       FROM technician_services ts
       LEFT JOIN service_items si ON ts.service_id = si.id
-      ORDER BY ts.technician_id, si.name
+      ORDER BY ts.technician_id, ts.created_at ASC
     `);
 
     const servicesByTechnician = {};
@@ -149,31 +173,7 @@ app.get('/api/app-state', async (req, res) => {
       });
     });
 
-    // 处理订单数据（包含项目）
-    const orderItemsResult = await global.pool.query(`
-      SELECT order_id, service_id, service_name, technician_id, technician_name,
-             price, technician_commission, salesperson_id, salesperson_name, salesperson_commission
-      FROM order_items
-      ORDER BY order_id, id
-    `);
-
-    const itemsByOrder = {};
-    orderItemsResult.rows.forEach(row => {
-      if (!itemsByOrder[row.order_id]) {
-        itemsByOrder[row.order_id] = [];
-      }
-      itemsByOrder[row.order_id].push({
-        serviceId: row.service_id,
-        serviceName: row.service_name,
-        technicianId: row.technician_id,
-        technicianName: row.technician_name,
-        price: parseFloat(row.price),
-        technicianCommission: parseFloat(row.technician_commission),
-        salespersonId: row.salesperson_id,
-        salespersonName: row.salesperson_name,
-        salespersonCommission: row.salesperson_commission ? parseFloat(row.salesperson_commission) : undefined
-      });
-    });
+    // 订单数据现在已经在ordersResult中包含了items
 
     // 构建响应数据
     const appState = {
@@ -233,14 +233,10 @@ app.get('/api/app-state', async (req, res) => {
         customerName: row.customer_name,
         customerPhone: row.customer_phone,
         status: row.status,
-        items: itemsByOrder[row.id] || [],
+        items: row.items || [],
         totalAmount: parseFloat(row.total_amount),
         receivedAmount: row.received_amount ? parseFloat(row.received_amount) : undefined,
-        companyCommissionRuleId: row.company_commission_rule_id,
-        companyCommissionRuleName: row.company_commission_rule_name,
-        companyCommissionType: row.company_commission_type,
-        companyCommissionRate: row.company_commission_rate ? parseFloat(row.company_commission_rate) : undefined,
-        companyCommissionAmount: row.company_commission_amount ? parseFloat(row.company_commission_amount) : undefined,
+        discountRate: row.discount_rate ? parseFloat(row.discount_rate) : undefined,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         completedAt: row.completed_at,

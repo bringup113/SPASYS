@@ -28,7 +28,7 @@ router.get('/technicians', async (req, res) => {
       LEFT JOIN technician_services ts ON t.id = ts.technician_id
       LEFT JOIN company_commission_rules ccr ON ts.company_commission_rule_id = ccr.id
       GROUP BY t.id
-      ORDER BY t.created_at DESC
+      ORDER BY t.created_at ASC
     `);
     
     const technicians = result.rows.map(row => ({
@@ -409,7 +409,7 @@ router.get('/technicians/:id/services', async (req, res) => {
       LEFT JOIN service_items si ON ts.service_id = si.id
       LEFT JOIN company_commission_rules ccr ON ts.company_commission_rule_id = ccr.id
       WHERE ts.technician_id = $1
-      ORDER BY si.name
+      ORDER BY ts.created_at ASC
     `, [id]);
     
     const services = result.rows.map(row => ({
@@ -465,7 +465,7 @@ router.put('/technicians/:id/services', async (req, res) => {
         LEFT JOIN service_items si ON ts.service_id = si.id
         LEFT JOIN company_commission_rules ccr ON ts.company_commission_rule_id = ccr.id
         WHERE ts.technician_id = $1
-        ORDER BY si.name
+        ORDER BY ts.created_at ASC
       `, [id]);
       
       const updatedServices = result.rows.map(row => ({

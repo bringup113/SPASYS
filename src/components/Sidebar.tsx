@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   Home, 
@@ -38,15 +38,15 @@ const menuItems = [
 export default function Sidebar() {
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
-  const toggleMenu = (path: string) => {
+  const toggleMenu = useCallback((path: string) => {
     setExpandedMenus(prev => 
       prev.includes(path) 
         ? prev.filter(p => p !== path)
         : [...prev, path]
     );
-  };
+  }, []);
 
-  const renderMenuItem = (item: any, level: number = 0) => {
+  const renderMenuItem = useCallback((item: any, level: number = 0) => {
     const isExpanded = expandedMenus.includes(item.path);
     const hasChildren = item.children && item.children.length > 0;
 
@@ -88,7 +88,7 @@ export default function Sidebar() {
         )}
       </div>
     );
-  };
+  }, [expandedMenus, toggleMenu]);
 
   return (
     <div className="w-64 bg-white shadow-lg">
