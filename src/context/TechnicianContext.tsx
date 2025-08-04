@@ -119,6 +119,7 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
       }));
     } catch (error) {
       console.error('❌ 删除技师失败:', error);
+      throw error; // 抛出错误，让调用者处理
     }
   };
 

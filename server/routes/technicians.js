@@ -304,10 +304,16 @@ router.delete('/technicians/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // 检查技师是否有关联的订单
-    const orderResult = await global.pool.query('SELECT COUNT(*) as count FROM order_items WHERE technician_id = $1', [id]);
-    if (parseInt(orderResult.rows[0].count) > 0) {
-      return res.status(400).json({ error: '技师有关联的订单，无法删除' });
+    // 检查技师是否有进行中的订单
+    const inProgressOrderResult = await global.pool.query(`
+      SELECT COUNT(*) as count 
+      FROM order_items oi 
+      JOIN orders o ON oi.order_id = o.id 
+      WHERE oi.technician_id = $1 AND o.status = 'in_progress'
+    `, [id]);
+    
+    if (parseInt(inProgressOrderResult.rows[0].count) > 0) {
+      return res.status(400).json({ error: '技师还有进行中订单，无法删除' });
     }
     
     const result = await global.pool.query('DELETE FROM technicians WHERE id = $1 RETURNING *', [id]);
