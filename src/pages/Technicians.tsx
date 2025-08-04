@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useTechnicianContext } from '../context/TechnicianContext';
 import { useServiceContext } from '../context/ServiceContext';
 import { useSettingsContext } from '../context/SettingsContext';
@@ -23,10 +23,10 @@ export default function TechniciansNew() {
   const [notification, setNotification] = useState({ show: false, message: '', type: 'error' as 'success' | 'error' | 'warning' });
   
   // 显示通知
-  const showNotification = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
+  const showNotification = useCallback((message: string, type: 'success' | 'error' | 'warning' = 'success') => {
     setNotification({ show: true, message, type });
     setTimeout(() => setNotification({ show: false, message: '', type: 'error' }), 3000);
-  };
+  }, []);
   
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -36,7 +36,7 @@ export default function TechniciansNew() {
     services: [] as ServiceAssignment[]
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     // 检查是否有未完成的订单
@@ -75,9 +75,9 @@ export default function TechniciansNew() {
       console.error('保存技师失败:', error);
       showNotification('保存技师失败，请重试', 'error');
     }
-  };
+  }, [editingId, orders, updateTechnician, addTechnician, formData, showNotification]);
 
-  const handleEdit = (technician: Technician) => {
+  const handleEdit = useCallback((technician: Technician) => {
     setEditingId(technician.id);
     setFormData({
       employeeId: technician.employeeId,
@@ -87,9 +87,9 @@ export default function TechniciansNew() {
       services: technician.services
     });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setEditingId(null);
     setFormData({
       employeeId: '',
@@ -99,9 +99,9 @@ export default function TechniciansNew() {
       services: []
     });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleCopy = (technician: Technician) => {
+  const handleCopy = useCallback((technician: Technician) => {
     setEditingId(null);
     setFormData({
       employeeId: '',
@@ -111,9 +111,9 @@ export default function TechniciansNew() {
       services: technician.services
     });
     setShowModal(true);
-  };
+  }, []);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setEditingId(null);
     setShowModal(false);
     setFormData({
@@ -123,9 +123,9 @@ export default function TechniciansNew() {
       status: 'available' as 'available' | 'busy' | 'offline',
       services: []
     });
-  };
+  }, []);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!deletingTechnician) return;
     
     // 检查是否有进行中的订单
@@ -168,7 +168,22 @@ export default function TechniciansNew() {
       });
       setDeletingTechnician(null);
     }
-  };
+  }, [deletingTechnician, orders, deleteTechnician, showNotification]);
+
+  // 缓存通知关闭函数
+  const handleNotificationClose = useCallback(() => {
+    setNotification({ show: false, message: '', type: 'error' });
+  }, []);
+
+  // 缓存删除技师设置函数
+  const handleSetDeletingTechnician = useCallback((technician: Technician) => {
+    setDeletingTechnician(technician);
+  }, []);
+
+  // 缓存删除技师关闭函数
+  const handleDeleteModalClose = useCallback(() => {
+    setDeletingTechnician(null);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -176,7 +191,7 @@ export default function TechniciansNew() {
         show={notification.show}
         message={notification.message}
         type={notification.type}
-        onClose={() => setNotification({ show: false, message: '', type: 'error' })}
+        onClose={handleNotificationClose}
       />
       <div className="flex justify-between items-center">
         <div>
@@ -200,7 +215,7 @@ export default function TechniciansNew() {
         countries={countries}
         onEdit={handleEdit}
         onCopy={handleCopy}
-        onDelete={(technician) => setDeletingTechnician(technician)}
+        onDelete={handleSetDeletingTechnician}
       />
 
       {/* 添加/编辑模态框 */}
@@ -220,7 +235,7 @@ export default function TechniciansNew() {
       {/* 删除确认对话框 */}
       <DeleteTechnicianModal
         technician={deletingTechnician}
-        onClose={() => setDeletingTechnician(null)}
+        onClose={handleDeleteModalClose}
         onConfirm={handleDelete}
       />
     </div>

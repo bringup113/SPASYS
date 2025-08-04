@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { X, Eye } from 'lucide-react';
 import { Order, OrderStatus, BusinessSettings } from '../../types';
 import { formatTime } from '../../utils/timeUtils';
@@ -16,7 +17,7 @@ interface OrderDetailModalProps {
   getStatusText: (status: OrderStatus) => string;
 }
 
-export default function OrderDetailModal({
+const OrderDetailModal = React.memo(function OrderDetailModal({
   isOpen,
   order,
   businessSettings,
@@ -221,4 +222,6 @@ export default function OrderDetailModal({
       </div>
     </div>
   );
-} 
+});
+
+export default OrderDetailModal; 

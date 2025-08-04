@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 
 interface TemporaryRoomModalProps {
@@ -9,7 +9,7 @@ interface TemporaryRoomModalProps {
   showNotification: (message: string, type: 'success' | 'error' | 'warning') => void;
 }
 
-export default function TemporaryRoomModal({ 
+const TemporaryRoomModal = React.memo(function TemporaryRoomModal({ 
   show, 
   onClose, 
   onConfirm, 
@@ -18,7 +18,7 @@ export default function TemporaryRoomModal({
 }: TemporaryRoomModalProps) {
   const [temporaryRoomName, setTemporaryRoomName] = useState('');
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     if (temporaryRoomName.trim()) {
       // 检查房间名称是否已存在
       const existingRoom = existingRooms?.find(room => room.name === temporaryRoomName.trim());
@@ -32,13 +32,13 @@ export default function TemporaryRoomModal({
     } else {
       showNotification('请输入房间名称', 'error');
     }
-  };
+  }, [temporaryRoomName, existingRooms, showNotification, onConfirm]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleConfirm();
     }
-  };
+  }, [handleConfirm]);
 
   if (!show) return null;
 
@@ -92,4 +92,6 @@ export default function TemporaryRoomModal({
       </div>
     </div>
   );
-} 
+});
+
+export default TemporaryRoomModal; 

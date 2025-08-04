@@ -1,3 +1,4 @@
+import React from 'react';
 import { Order, BusinessSettings } from '../../types';
 import OrderRow from './OrderRow';
 
@@ -27,7 +28,7 @@ interface OrderTableProps {
   onPageSizeChange: (pageSize: number) => void;
 }
 
-export default function OrderTable({
+const OrderTable = React.memo(function OrderTable({
   currentOrders,
   businessSettings,
   getServiceName,
@@ -204,4 +205,6 @@ export default function OrderTable({
       </div>
     </div>
   );
-} 
+});
+
+export default OrderTable; 

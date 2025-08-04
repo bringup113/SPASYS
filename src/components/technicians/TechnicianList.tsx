@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Technician } from '../../types';
 import { Edit, Copy, Trash2 } from 'lucide-react';
 
@@ -10,16 +10,24 @@ interface TechnicianListProps {
   onDelete: (technician: Technician) => void;
 }
 
-export default function TechnicianList({
+const TechnicianList = React.memo(function TechnicianList({
   technicians,
   countries,
   onEdit,
   onCopy,
   onDelete
 }: TechnicianListProps) {
+  // 缓存国家名称映射
+  const countryNameMap = useMemo(() => {
+    const map = new Map();
+    countries?.forEach(country => {
+      map.set(country.id, country.name);
+    });
+    return map;
+  }, [countries]);
+
   const getCountryName = (countryId: string) => {
-    const country = countries?.find(c => c.id === countryId);
-    return country ? country.name : '未知国家';
+    return countryNameMap.get(countryId) || '未知国家';
   };
 
   const getStatusColor = (status: string) => {
@@ -39,6 +47,16 @@ export default function TechnicianList({
       default: return status;
     }
   };
+
+  // 缓存表格行数据
+  const tableRows = useMemo(() => {
+    return technicians.map((technician) => ({
+      ...technician,
+      countryName: getCountryName(technician.countryId),
+      statusColor: getStatusColor(technician.status),
+      statusText: getStatusText(technician.status)
+    }));
+  }, [technicians, countryNameMap]);
 
   return (
     <div className="bg-white rounded-lg shadow">
@@ -67,20 +85,20 @@ export default function TechnicianList({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {technicians.map((technician) => (
+            {tableRows.map((technician) => (
               <tr key={technician.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {technician.employeeId}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {getCountryName(technician.countryId)}
+                  {technician.countryName}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {technician.hireDate}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(technician.status)}`}>
-                    {getStatusText(technician.status)}
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${technician.statusColor}`}>
+                    {technician.statusText}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -112,4 +130,6 @@ export default function TechnicianList({
       </div>
     </div>
   );
-} 
+});
+
+export default TechnicianList; 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 
 interface TechnicianFormData {
   employeeId: string;
@@ -13,17 +13,17 @@ interface TechnicianFormProps {
   onChange: (data: TechnicianFormData) => void;
 }
 
-export default function TechnicianForm({
+const TechnicianForm = React.memo(function TechnicianForm({
   formData,
   countries,
   onChange
 }: TechnicianFormProps) {
-  const handleChange = (field: keyof TechnicianFormData, value: string | 'available' | 'busy' | 'offline') => {
+  const handleChange = useCallback((field: keyof TechnicianFormData, value: string | 'available' | 'busy' | 'offline') => {
     onChange({
       ...formData,
       [field]: value
     });
-  };
+  }, [formData, onChange]);
 
   return (
     <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6">
@@ -142,4 +142,6 @@ export default function TechnicianForm({
       </div>
     </div>
   );
-} 
+});
+
+export default TechnicianForm; 

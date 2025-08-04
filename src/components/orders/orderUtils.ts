@@ -1,10 +1,24 @@
 import { OrderStatus } from '../../types';
 import { AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 
+// 缓存映射
+const serviceNameCache = new Map<string, string>();
+const technicianDisplayCache = new Map<string, any>();
+const roomNameCache = new Map<string, string>();
+
 // 获取服务名称
 export const getServiceName = (serviceId: string, serviceItems: any[] | undefined) => {
+  const cacheKey = `${serviceId}-${serviceItems?.length || 0}`;
+  
+  if (serviceNameCache.has(cacheKey)) {
+    return serviceNameCache.get(cacheKey)!;
+  }
+  
   const service = serviceItems?.find(s => s.id === serviceId);
-  return service ? service.name : '未知服务';
+  const result = service ? service.name : '未知服务';
+  
+  serviceNameCache.set(cacheKey, result);
+  return result;
 };
 
 // 获取技师显示信息
@@ -13,45 +27,68 @@ export const getTechnicianDisplay = (
   technicianName: string | undefined, 
   technicians: any[] | undefined
 ) => {
+  const cacheKey = `${technicianId || 'null'}-${technicianName || 'null'}-${technicians?.length || 0}`;
+  
+  if (technicianDisplayCache.has(cacheKey)) {
+    return technicianDisplayCache.get(cacheKey)!;
+  }
+  
   // 优先使用订单中保存的技师工号快照
   if (technicianName) {
     // 检查技师是否还存在
     const technician = technicianId ? technicians?.find(t => t.id === technicianId) : null;
     
+    let result;
     if (technician) {
       // 技师存在，正常显示
-      return {
+      result = {
         text: technicianName,
         isDeparted: false,
         tooltip: ''
       };
     } else {
       // 技师不存在，显示红色标识
-      return {
+      result = {
         text: technicianName,
         isDeparted: true,
         tooltip: '该技师已离职'
       };
     }
+    
+    technicianDisplayCache.set(cacheKey, result);
+    return result;
   } else {
     // 没有技师信息
-    return {
+    const result = {
       text: '未知技师',
       isDeparted: true,
       tooltip: '该技师已离职'
     };
+    
+    technicianDisplayCache.set(cacheKey, result);
+    return result;
   }
 };
 
 // 获取房间名称
 export const getRoomName = (roomId: string, roomName: string | undefined, rooms: any[] | undefined) => {
+  const cacheKey = `${roomId}-${roomName || 'null'}-${rooms?.length || 0}`;
+  
+  if (roomNameCache.has(cacheKey)) {
+    return roomNameCache.get(cacheKey)!;
+  }
+  
   // 优先使用订单中保存的房间名称快照
   if (roomName) {
+    roomNameCache.set(cacheKey, roomName);
     return roomName;
   }
   // 如果快照不存在，则从当前房间列表中查找
   const room = rooms?.find(r => r.id === roomId);
-  return room ? room.name : '未知房间';
+  const result = room ? room.name : '未知房间';
+  
+  roomNameCache.set(cacheKey, result);
+  return result;
 };
 
 // 获取状态颜色
@@ -82,4 +119,11 @@ export const getStatusIcon = (status: OrderStatus) => {
     case 'cancelled': return XCircle;
     default: return AlertCircle;
   }
+};
+
+// 清理缓存（可选，用于防止内存泄漏）
+export const clearOrderUtilsCache = () => {
+  serviceNameCache.clear();
+  technicianDisplayCache.clear();
+  roomNameCache.clear();
 }; 

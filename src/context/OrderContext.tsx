@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect, useCallback, useMemo } from 'react';
 import { Order, OrderStatus, OrderState } from '../types';
 import { orderAPI } from '../services/api';
 import { websocketService } from '../services/websocket';
@@ -83,7 +83,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const addOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addOrder = useCallback(async (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       const createdOrder = await orderAPI.create(order);
       setState((prev: OrderState) => ({
@@ -95,9 +95,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       console.error('❌ 创建订单失败:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const updateOrder = async (id: string, order: Partial<Order>) => {
+  const updateOrder = useCallback(async (id: string, order: Partial<Order>) => {
     try {
       const updatedOrder = await orderAPI.update(id, order);
       setState((prev: OrderState) => ({
@@ -110,9 +110,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       console.error('❌ 更新订单失败:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const deleteOrder = async (id: string) => {
+  const deleteOrder = useCallback(async (id: string) => {
     try {
       await orderAPI.delete(id);
       setState((prev: OrderState) => ({
@@ -123,9 +123,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       console.error('❌ 删除订单失败:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const updateOrderStatus = async (id: string, status: OrderStatus) => {
+  const updateOrderStatus = useCallback(async (id: string, status: OrderStatus) => {
     try {
       const updatedOrder = await orderAPI.updateStatus(id, status);
       setState((prev: OrderState) => ({
@@ -138,15 +138,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       console.error('❌ 更新订单状态失败:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const value: OrderContextType = {
+  const value: OrderContextType = useMemo(() => ({
     ...state,
     addOrder,
     updateOrder,
     deleteOrder,
     updateOrderStatus,
-  };
+  }), [state, addOrder, updateOrder, deleteOrder, updateOrderStatus]);
 
   return (
     <OrderContext.Provider value={value}>

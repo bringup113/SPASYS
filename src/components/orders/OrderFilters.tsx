@@ -1,3 +1,4 @@
+import React from 'react';
 import { Filter } from 'lucide-react';
 import { Room, Technician, ServiceItem } from '../../types';
 
@@ -19,7 +20,7 @@ interface OrderFiltersProps {
   totalOrdersCount: number;
 }
 
-export default function OrderFilters({
+const OrderFilters = React.memo(function OrderFilters({
   filters,
   setFilters,
   resetFilters,
@@ -156,4 +157,6 @@ export default function OrderFilters({
       </div>
     </div>
   );
-} 
+});
+
+export default OrderFilters; 

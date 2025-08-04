@@ -1,3 +1,4 @@
+import React from 'react';
 import { HelpCircle } from 'lucide-react';
 import { Order, OrderStatus, BusinessSettings } from '../../types';
 import { formatCurrency } from '../../utils/currencyUtils';
@@ -19,7 +20,7 @@ interface OrderRowProps {
   onCancelOrder: (orderId: string) => void;
 }
 
-export default function OrderRow({
+const OrderRow = React.memo(function OrderRow({
   order,
   businessSettings,
   getServiceName,
@@ -127,4 +128,6 @@ export default function OrderRow({
       </td>
     </tr>
   );
-} 
+});
+
+export default OrderRow; 

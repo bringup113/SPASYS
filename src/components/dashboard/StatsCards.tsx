@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { Building2, Users, Clock } from 'lucide-react';
 
 interface StatsCardsProps {
@@ -6,8 +7,8 @@ interface StatsCardsProps {
   orders: any[];
 }
 
-export default function StatsCards({ rooms, technicians, orders }: StatsCardsProps) {
-  const stats = [
+const StatsCards = React.memo(function StatsCards({ rooms, technicians, orders }: StatsCardsProps) {
+  const stats = useMemo(() => [
     {
       name: '房间总数',
       value: rooms?.length || 0,
@@ -32,7 +33,7 @@ export default function StatsCards({ rooms, technicians, orders }: StatsCardsPro
       icon: Clock,
       color: 'bg-purple-500',
     },
-  ];
+  ], [rooms, technicians, orders]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -51,4 +52,6 @@ export default function StatsCards({ rooms, technicians, orders }: StatsCardsPro
       ))}
     </div>
   );
-} 
+});
+
+export default StatsCards; 

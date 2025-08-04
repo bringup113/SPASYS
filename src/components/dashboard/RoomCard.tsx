@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useServiceContext } from '../../context/ServiceContext';
 import { useTechnicianContext } from '../../context/TechnicianContext';
 import { useSettingsContext } from '../../context/SettingsContext';
@@ -12,17 +12,17 @@ interface RoomCardProps {
   currentOrder?: any;
 }
 
-export default function RoomCard({ room, onRoomClick, currentOrder }: RoomCardProps) {
+const RoomCard = React.memo(function RoomCard({ room, onRoomClick, currentOrder }: RoomCardProps) {
   const { serviceItems } = useServiceContext();
   const { technicians } = useTechnicianContext();
   const { businessSettings } = useSettingsContext();
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isOverdue, setIsOverdue] = useState(false);
 
-  const getServiceName = (serviceId: string) => {
+  const getServiceName = useCallback((serviceId: string) => {
     const service = serviceItems?.find((s: any) => s.id === serviceId);
     return service ? service.name : '未知服务';
-  };
+  }, [serviceItems]);
 
   useEffect(() => {
     if (currentOrder && currentOrder.status === 'in_progress') {
@@ -49,25 +49,25 @@ export default function RoomCard({ room, onRoomClick, currentOrder }: RoomCardPr
     }
   }, [currentOrder, serviceItems]);
 
-  const formatTime = (seconds: number) => {
+  const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, []);
 
-  const getStatusColor = () => {
+  const getStatusColor = useCallback(() => {
     if (room.status === 'available') return 'bg-green-100 border-green-300';
     if (room.status === 'occupied') return 'bg-orange-100 border-orange-300';
     if (room.status === 'maintenance') return 'bg-red-100 border-red-300';
     return 'bg-gray-100 border-gray-300';
-  };
+  }, [room.status]);
 
-  const getStatusText = () => {
+  const getStatusText = useCallback(() => {
     if (room.status === 'available') return '可用';
     if (room.status === 'occupied') return '使用中';
     if (room.status === 'maintenance') return '维护中';
     return room.status;
-  };
+  }, [room.status]);
 
   return (
     <div 
@@ -149,4 +149,6 @@ export default function RoomCard({ room, onRoomClick, currentOrder }: RoomCardPr
       </div>
     </div>
   );
-} 
+});
+
+export default RoomCard; 

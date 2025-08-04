@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ServiceAssignment } from '../../types';
 import { Edit, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/currencyUtils';
@@ -11,7 +11,7 @@ interface ServiceAssignmentFormProps {
   onServicesChange: (services: ServiceAssignment[]) => void;
 }
 
-export default function ServiceAssignmentForm({
+const ServiceAssignmentForm = React.memo(function ServiceAssignmentForm({
   services,
   serviceItems,
   companyCommissionRules,
@@ -33,26 +33,26 @@ export default function ServiceAssignmentForm({
     companyCommissionRuleId: 'default-rule'
   });
 
-  const addServiceToTechnician = () => {
+  const addServiceToTechnician = useCallback(() => {
     if (newService.serviceId && newService.price > 0) {
       onServicesChange([...services, { ...newService }]);
       setNewService({ serviceId: '', price: 0, commission: 0, companyCommissionRuleId: 'default-rule' });
     }
-  };
+  }, [newService, services, onServicesChange]);
 
-  const removeServiceFromTechnician = (index: number) => {
+  const removeServiceFromTechnician = useCallback((index: number) => {
     onServicesChange(services.filter((_, i) => i !== index));
-  };
+  }, [services, onServicesChange]);
 
-  const startEditService = (index: number, service: ServiceAssignment) => {
+  const startEditService = useCallback((index: number, service: ServiceAssignment) => {
     setEditingServiceIndex(index);
     setEditingService({ 
       ...service, 
       companyCommissionRuleId: service.companyCommissionRuleId || 'default-rule' 
     });
-  };
+  }, []);
 
-  const saveEditService = () => {
+  const saveEditService = useCallback(() => {
     if (editingServiceIndex !== null) {
       const updatedServices = services.map((service, index) =>
         index === editingServiceIndex ? editingService : service
@@ -61,20 +61,28 @@ export default function ServiceAssignmentForm({
       setEditingServiceIndex(null);
       setEditingService({ serviceId: '', price: 0, commission: 0, companyCommissionRuleId: 'default-rule' });
     }
-  };
+  }, [editingServiceIndex, editingService, services, onServicesChange]);
 
-  const cancelEditService = () => {
+  const cancelEditService = useCallback(() => {
     setEditingServiceIndex(null);
     setEditingService({ serviceId: '', price: 0, commission: 0, companyCommissionRuleId: 'default-rule' });
-  };
+  }, []);
 
-  const getServiceName = (serviceId: string | null) => {
+  // 缓存服务名称映射
+  const serviceNameMap = useMemo(() => {
+    const map = new Map();
+    serviceItems?.forEach(service => {
+      map.set(service.id, service.name);
+    });
+    return map;
+  }, [serviceItems]);
+
+  const getServiceName = useCallback((serviceId: string | null) => {
     if (!serviceId) {
       return '未设置服务';
     }
-    const service = serviceItems?.find(s => s.id === serviceId);
-    return service ? service.name : '未知服务';
-  };
+    return serviceNameMap.get(serviceId) || '未知服务';
+  }, [serviceNameMap]);
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6">
@@ -276,4 +284,6 @@ export default function ServiceAssignmentForm({
       )}
     </div>
   );
-} 
+});
+
+export default ServiceAssignmentForm; 

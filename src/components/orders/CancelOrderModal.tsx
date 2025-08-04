@@ -1,3 +1,5 @@
+import React from 'react';
+
 interface CancelOrderModalProps {
   isOpen: boolean;
   orderId: string | null;
@@ -7,7 +9,7 @@ interface CancelOrderModalProps {
   onCancel: () => void;
 }
 
-export default function CancelOrderModal({
+const CancelOrderModal = React.memo(function CancelOrderModal({
   isOpen,
   orderId,
   cancelReason,
@@ -51,4 +53,6 @@ export default function CancelOrderModal({
       </div>
     </div>
   );
-} 
+});
+
+export default CancelOrderModal; 

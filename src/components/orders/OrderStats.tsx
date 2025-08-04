@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Order } from '../../types';
 
@@ -5,10 +6,16 @@ interface OrderStatsProps {
   orders: Order[] | undefined;
 }
 
-export default function OrderStats({ orders }: OrderStatsProps) {
-  const inProgressCount = orders?.filter(order => order.status === 'in_progress').length || 0;
-  const completedCount = orders?.filter(order => order.status === 'completed').length || 0;
-  const cancelledCount = orders?.filter(order => order.status === 'cancelled').length || 0;
+const OrderStats = React.memo(function OrderStats({ orders }: OrderStatsProps) {
+  const stats = useMemo(() => {
+    const inProgressCount = orders?.filter(order => order.status === 'in_progress').length || 0;
+    const completedCount = orders?.filter(order => order.status === 'completed').length || 0;
+    const cancelledCount = orders?.filter(order => order.status === 'cancelled').length || 0;
+    
+    return { inProgressCount, completedCount, cancelledCount };
+  }, [orders]);
+
+  const { inProgressCount, completedCount, cancelledCount } = stats;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -70,4 +77,6 @@ export default function OrderStats({ orders }: OrderStatsProps) {
       </div>
     </div>
   );
-} 
+});
+
+export default OrderStats; 

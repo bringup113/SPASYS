@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Technician } from '../../types';
 
@@ -8,7 +8,7 @@ interface DeleteTechnicianModalProps {
   onConfirm: () => Promise<void> | void;
 }
 
-export default function DeleteTechnicianModal({
+const DeleteTechnicianModal = React.memo(function DeleteTechnicianModal({
   technician,
   onClose,
   onConfirm
@@ -17,14 +17,14 @@ export default function DeleteTechnicianModal({
   
   if (!technician) return null;
   
-  const handleConfirm = async () => {
+  const handleConfirm = useCallback(async () => {
     setIsDeleting(true);
     try {
       await onConfirm();
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [onConfirm]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
@@ -74,4 +74,6 @@ export default function DeleteTechnicianModal({
       </div>
     </div>
   );
-} 
+});
+
+export default DeleteTechnicianModal; 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useOrderContext } from '../context/OrderContext';
 import { useServiceContext } from '../context/ServiceContext';
 import { useTechnicianContext } from '../context/TechnicianContext';
@@ -72,26 +72,26 @@ export default function Dashboard() {
   };
 
   // 检查并删除过期的临时房间
-  useEffect(() => {
-    const checkExpiredRooms = () => {
-      const now = new Date();
-      rooms?.forEach(room => {
-        if (room.isTemporary && room.expiresAt) {
-          const expiresAt = new Date(room.expiresAt);
-          if (now > expiresAt) {
-            deleteRoom(room.id);
-          }
+  const checkExpiredRooms = useCallback(() => {
+    const now = new Date();
+    rooms?.forEach(room => {
+      if (room.isTemporary && room.expiresAt) {
+        const expiresAt = new Date(room.expiresAt);
+        if (now > expiresAt) {
+          deleteRoom(room.id);
         }
-      });
-    };
+      }
+    });
+  }, [rooms, deleteRoom]);
 
+  useEffect(() => {
     checkExpiredRooms();
     const interval = setInterval(checkExpiredRooms, 60000); // 每分钟检查一次
 
     return () => clearInterval(interval);
-  }, [rooms, deleteRoom]);
+  }, [checkExpiredRooms]);
 
-  const handleRoomClick = async (room: any) => {
+  const handleRoomClick = useCallback(async (room: any) => {
     if (room.status === 'available') {
       // 创建临时订单对象（不保存到数据库）
       const tempOrder = {
@@ -136,35 +136,43 @@ export default function Dashboard() {
         showNotification('未找到该房间的订单信息', 'error');
       }
     }
-  };
+  }, [orders, showNotification]);
 
-  const getServiceName = (serviceId: string) => {
+  const getServiceName = useCallback((serviceId: string) => {
     const service = serviceItems?.find(s => s.id === serviceId);
     return service ? service.name : '未知服务';
-  };
+  }, [serviceItems]);
 
-  const getTechnicianName = (technicianId: string) => {
-    const technician = technicians?.find(t => t.id === technicianId);
-    return technician ? technician.employeeId : '未知技师';
-  };
+  // 缓存技师名称映射
+  const technicianNameMap = useMemo(() => {
+    const map = new Map();
+    technicians?.forEach(technician => {
+      map.set(technician.id, technician.employeeId);
+    });
+    return map;
+  }, [technicians]);
+
+  const getTechnicianName = useCallback((technicianId: string) => {
+    return technicianNameMap.get(technicianId) || '未知技师';
+  }, [technicianNameMap]);
 
   // 重置结账状态的公共函数
-  const resetCheckoutState = () => {
+  const resetCheckoutState = useCallback(() => {
     setCheckoutData({
       customerName: '',
       selectedSalespersonId: '',
       receivedAmount: ''
     });
-  };
+  }, []);
 
   // 处理删除项目
-  const handleDeleteItem = (index: number, item: OrderItem) => {
+  const handleDeleteItem = useCallback((index: number, item: OrderItem) => {
     setDeletingItem({ index, item });
     setShowDeleteItemModal(true);
-  };
+  }, []);
 
   // 确认删除项目
-  const confirmDeleteItem = async () => {
+  const confirmDeleteItem = useCallback(async () => {
     if (!deletingItem || !currentOrder) return;
 
     const { index, item } = deletingItem;
@@ -217,10 +225,10 @@ export default function Dashboard() {
     } catch (error) {
       showNotification('删除项目失败，请重试', 'error');
     }
-  };
+  }, [deletingItem, currentOrder, updateOrderStatus, updateRoom, showNotification, updateOrder, orders, updateTechnicianStatus]);
 
   // 处理结账（仅结账，不完成服务）
-  const handleCheckout = async () => {
+  const handleCheckout = useCallback(async () => {
     if (!currentOrder) {
       showNotification('没有可结账的订单', 'error');
       return;
@@ -284,10 +292,10 @@ export default function Dashboard() {
       console.error('结账失败:', error);
       showNotification('结账失败，请重试', 'error');
     }
-  };
+  }, [currentOrder, checkoutData, salespeople, companyCommissionRules, updateOrder, showNotification, resetCheckoutState]);
 
   // 处理完成服务
-  const handleCompleteServiceOnly = async () => {
+  const handleCompleteServiceOnly = useCallback(async () => {
     console.log('🔍 仅完成服务函数被调用');
     if (!currentOrder) {
       showNotification('没有可完成的订单', 'error');
@@ -327,10 +335,10 @@ export default function Dashboard() {
       console.error('完成服务失败:', error);
       showNotification('完成服务失败，请重试', 'error');
     }
-  };
+  }, [currentOrder, updateOrder, rooms, deleteRoom, updateRoom, updateTechnicianStatus, showNotification]);
 
   // 处理完成服务并结账
-  const handleCompleteServiceAndCheckout = async () => {
+  const handleCompleteServiceAndCheckout = useCallback(async () => {
     console.log('🔍 完成服务并结账函数被调用');
     if (!currentOrder) {
       showNotification('没有可完成的订单', 'error');
@@ -412,7 +420,7 @@ export default function Dashboard() {
       console.error('完成服务失败:', error);
       showNotification('完成服务失败，请重试', 'error');
     }
-  };
+  }, [currentOrder, checkoutData, salespeople, companyCommissionRules, updateOrder, rooms, deleteRoom, updateRoom, updateTechnicianStatus, showNotification, resetCheckoutState]);
 
   return (
     <div className="space-y-6">
@@ -448,7 +456,7 @@ export default function Dashboard() {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">房间状态</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {rooms?.map((room) => {
+          {useMemo(() => rooms?.map((room) => {
             const currentOrder = orders?.find(order => 
               order.roomId === room.id && order.status === 'in_progress'
             );
@@ -461,7 +469,7 @@ export default function Dashboard() {
                 currentOrder={currentOrder}
               />
             );
-          })}
+          }), [rooms, orders, handleRoomClick])}
         </div>
       </div>
 

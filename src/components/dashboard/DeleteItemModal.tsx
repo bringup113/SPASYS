@@ -1,3 +1,4 @@
+import React from 'react';
 import { Trash2 } from 'lucide-react';
 import { OrderItem } from '../../types';
 import { formatCurrency } from '../../utils/currencyUtils';
@@ -12,7 +13,7 @@ interface DeleteItemModalProps {
   getServiceName: (serviceId: string) => string;
 }
 
-export default function DeleteItemModal({ 
+const DeleteItemModal = React.memo(function DeleteItemModal({ 
   show, 
   onClose, 
   onConfirm, 
@@ -123,4 +124,6 @@ export default function DeleteItemModal({
       </div>
     </div>
   );
-} 
+});
+
+export default DeleteItemModal; 

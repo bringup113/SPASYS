@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useOrderContext } from '../context/OrderContext';
 import { useServiceContext } from '../context/ServiceContext';
 import { useTechnicianContext } from '../context/TechnicianContext';
@@ -55,26 +55,26 @@ export default function OrdersRefactored() {
   const [showFilters, setShowFilters] = useState(false);
 
   // 显示通知
-  const showNotification = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
+  const showNotification = useCallback((message: string, type: 'success' | 'error' | 'warning' = 'success') => {
     setNotification({ show: true, message, type });
     setTimeout(() => setNotification({ show: false, message: '', type: 'error' }), 3000);
-  };
+  }, []);
 
   // 工具函数包装器
-  const getServiceNameWrapper = (serviceId: string) => {
+  const getServiceNameWrapper = useCallback((serviceId: string) => {
     return getServiceName(serviceId, serviceItems);
-  };
+  }, [serviceItems]);
 
-  const getTechnicianDisplayWrapper = (technicianId?: string, technicianName?: string) => {
+  const getTechnicianDisplayWrapper = useCallback((technicianId?: string, technicianName?: string) => {
     return getTechnicianDisplay(technicianId, technicianName, technicians);
-  };
+  }, [technicians]);
 
-  const getRoomNameWrapper = (roomId: string, roomName?: string) => {
+  const getRoomNameWrapper = useCallback((roomId: string, roomName?: string) => {
     return getRoomName(roomId, roomName, rooms);
-  };
+  }, [rooms]);
 
   // 取消订单处理
-  const handleCancelOrder = (orderId: string) => {
+  const handleCancelOrder = useCallback((orderId: string) => {
     if (!cancelReason.trim()) {
       showNotification('请输入取消原因', 'error');
       return;
@@ -95,49 +95,51 @@ export default function OrdersRefactored() {
     setCancellingOrderId(null);
     setCancelReason('');
     showNotification('订单已取消', 'success');
-  };
+  }, [cancelReason, updateOrderStatus, orders, updateOrder, showNotification]);
 
   // 查看订单详情
-  const handleViewDetail = (order: Order) => {
+  const handleViewDetail = useCallback((order: Order) => {
     setSelectedOrder(order);
     setShowOrderDetailModal(true);
-  };
+  }, []);
 
   // 筛选订单
-  const filteredOrders = orders?.filter(order => {
-    // 日期筛选
-    if (filters.startDate && new Date(order.createdAt) < new Date(filters.startDate)) {
-      return false;
-    }
-    if (filters.endDate && new Date(order.createdAt) > new Date(filters.endDate + 'T23:59:59')) {
-      return false;
-    }
-    
-    // 房间筛选
-    if (filters.roomId && order.roomId !== filters.roomId) {
-      return false;
-    }
-    
-    // 技师筛选
-    if (filters.technicianId && !order.items.some(item => item.technicianId === filters.technicianId)) {
-      return false;
-    }
-    
-    // 服务项目筛选
-    if (filters.serviceId && !order.items.some(item => item.serviceId === filters.serviceId)) {
-      return false;
-    }
-    
-    // 状态筛选
-    if (filters.status && order.status !== filters.status) {
-      return false;
-    }
-    
-    return true;
-  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
+  const filteredOrders = useMemo(() => {
+    return orders?.filter(order => {
+      // 日期筛选
+      if (filters.startDate && new Date(order.createdAt) < new Date(filters.startDate)) {
+        return false;
+      }
+      if (filters.endDate && new Date(order.createdAt) > new Date(filters.endDate + 'T23:59:59')) {
+        return false;
+      }
+      
+      // 房间筛选
+      if (filters.roomId && order.roomId !== filters.roomId) {
+        return false;
+      }
+      
+      // 技师筛选
+      if (filters.technicianId && !order.items.some(item => item.technicianId === filters.technicianId)) {
+        return false;
+      }
+      
+      // 服务项目筛选
+      if (filters.serviceId && !order.items.some(item => item.serviceId === filters.serviceId)) {
+        return false;
+      }
+      
+      // 状态筛选
+      if (filters.status && order.status !== filters.status) {
+        return false;
+      }
+      
+      return true;
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) || [];
+  }, [orders, filters]);
 
   // 重置筛选
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setFilters({
       startDate: '',
       endDate: '',
@@ -147,25 +149,25 @@ export default function OrdersRefactored() {
       status: ''
     });
     setCurrentPage(1);
-  };
+  }, []);
 
   // 分页计算
-  const totalOrders = filteredOrders.length;
-  const totalPages = Math.ceil(totalOrders / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const currentOrders = filteredOrders.slice(startIndex, endIndex);
+  const totalOrders = useMemo(() => filteredOrders.length, [filteredOrders]);
+  const totalPages = useMemo(() => Math.ceil(totalOrders / pageSize), [totalOrders, pageSize]);
+  const startIndex = useMemo(() => (currentPage - 1) * pageSize, [currentPage, pageSize]);
+  const endIndex = useMemo(() => startIndex + pageSize, [startIndex, pageSize]);
+  const currentOrders = useMemo(() => filteredOrders.slice(startIndex, endIndex), [filteredOrders, startIndex, endIndex]);
 
   // 处理页码变化
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
-  };
+  }, []);
 
   // 处理页面大小变化
-  const handlePageSizeChange = (newPageSize: number) => {
+  const handlePageSizeChange = useCallback((newPageSize: number) => {
     setPageSize(newPageSize);
     setCurrentPage(1);
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

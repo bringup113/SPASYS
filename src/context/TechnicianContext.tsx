@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect, useCallback, useMemo } from 'react';
 import { Technician, TechnicianStatus, TechnicianState } from '../types';
 import { technicianAPI } from '../services/api';
 import { websocketService } from '../services/websocket';
@@ -83,7 +83,7 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const addTechnician = async (technician: Omit<Technician, 'id'>) => {
+  const addTechnician = useCallback(async (technician: Omit<Technician, 'id'>) => {
     try {
       const createdTechnician = await technicianAPI.create(technician);
       setState((prev: TechnicianState) => ({
@@ -93,9 +93,9 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('❌ 创建技师失败:', error);
     }
-  };
+  }, []);
 
-  const updateTechnician = async (id: string, technician: Partial<Technician>) => {
+  const updateTechnician = useCallback(async (id: string, technician: Partial<Technician>) => {
     try {
       const updatedTechnician = await technicianAPI.update(id, technician);
       setState((prev: TechnicianState) => ({
@@ -108,9 +108,9 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
       console.error('❌ 更新技师失败:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const deleteTechnician = async (id: string) => {
+  const deleteTechnician = useCallback(async (id: string) => {
     try {
       await technicianAPI.delete(id);
       setState((prev: TechnicianState) => ({
@@ -121,9 +121,9 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
       console.error('❌ 删除技师失败:', error);
       throw error; // 抛出错误，让调用者处理
     }
-  };
+  }, []);
 
-  const updateTechnicianStatus = async (id: string, status: TechnicianStatus) => {
+  const updateTechnicianStatus = useCallback(async (id: string, status: TechnicianStatus) => {
     try {
       const updatedTechnician = await technicianAPI.updateStatus(id, status);
       setState((prev: TechnicianState) => ({
@@ -136,15 +136,15 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
       console.error('❌ 更新技师状态失败:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const value: TechnicianContextType = {
+  const value: TechnicianContextType = useMemo(() => ({
     ...state,
     addTechnician,
     updateTechnician,
     deleteTechnician,
     updateTechnicianStatus,
-  };
+  }), [state, addTechnician, updateTechnician, deleteTechnician, updateTechnicianStatus]);
 
   return (
     <TechnicianContext.Provider value={value}>

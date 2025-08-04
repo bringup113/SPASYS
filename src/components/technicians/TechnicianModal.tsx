@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Plus, X, Check } from 'lucide-react';
 import { ServiceAssignment } from '../../types';
 import TechnicianForm from './TechnicianForm';
@@ -25,7 +25,7 @@ interface TechnicianModalProps {
   onFormDataChange: (data: TechnicianFormData) => void;
 }
 
-export default function TechnicianModal({
+const TechnicianModal = React.memo(function TechnicianModal({
   show,
   editingId,
   formData,
@@ -39,7 +39,7 @@ export default function TechnicianModal({
 }: TechnicianModalProps) {
   if (!show) return null;
 
-  const handleFormDataChange = (field: keyof TechnicianFormData, value: any) => {
+  const handleFormDataChange = useCallback((field: keyof TechnicianFormData, value: any) => {
     if (field === 'services') {
       onFormDataChange({
         ...formData,
@@ -51,7 +51,7 @@ export default function TechnicianModal({
         [field]: value
       });
     }
-  };
+  }, [formData, onFormDataChange]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
@@ -130,4 +130,6 @@ export default function TechnicianModal({
       </div>
     </div>
   );
-} 
+});
+
+export default TechnicianModal; 

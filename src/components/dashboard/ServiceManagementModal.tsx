@@ -1,3 +1,4 @@
+import React, { useCallback } from 'react';
 import { 
   XCircle, 
   Package, 
@@ -42,7 +43,7 @@ interface ServiceManagementModalProps {
   setIsCheckoutMode: (mode: boolean) => void;
 }
 
-export default function ServiceManagementModal({
+const ServiceManagementModal = React.memo(function ServiceManagementModal({
   show,
   onClose,
   selectedRoom,
@@ -77,7 +78,7 @@ export default function ServiceManagementModal({
 
 
   // 处理技师选择
-  const handleTechnicianSelect = async (technician: any) => {
+  const handleTechnicianSelect = useCallback(async (technician: any) => {
     const serviceAssignment = technician.services?.find((s: any) => s.serviceId === selectedService.id);
     if (!serviceAssignment) return;
 
@@ -112,10 +113,10 @@ export default function ServiceManagementModal({
     // 重置选择状态
     setSelectedService(null);
     setModalStep('service');
-  };
+  }, [selectedService, companyCommissionRules, currentOrder.items, setCurrentOrder, setSelectedService, setModalStep]);
 
   // 处理完成并结账
-  const handleFinishAndCheckout = async () => {
+  const handleFinishAndCheckout = useCallback(async () => {
     if (currentOrder.items.length === 0) {
       showNotification('请先添加至少一项服务', 'error');
       return;
@@ -183,10 +184,10 @@ export default function ServiceManagementModal({
       receivedAmount: currentOrder.receivedAmount ? currentOrder.receivedAmount.toString() : currentOrder.totalAmount.toString()
     });
     setIsCheckoutMode(true);
-  };
+  }, [currentOrder, addOrder, updateRoom, updateOrder, updateTechnicianStatus, showNotification, setCurrentOrder, setSelectedService, setModalStep, setCheckoutData, setIsCheckoutMode]);
 
   // 处理完成
-  const handleFinish = async () => {
+  const handleFinish = useCallback(async () => {
     if (currentOrder.items.length === 0) {
       showNotification('请先添加至少一项服务', 'error');
       return;
@@ -248,10 +249,10 @@ export default function ServiceManagementModal({
     setModalStep('service');
     setIsCheckoutMode(false);
     onClose();
-  };
+  }, [currentOrder, addOrder, updateRoom, updateOrder, updateTechnicianStatus, showNotification, setCurrentOrder, setSelectedService, setModalStep, setIsCheckoutMode, onClose]);
 
   // 处理取消
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     // 重置所有选择状态
     setSelectedService(null);
     setModalStep('service');
@@ -263,7 +264,7 @@ export default function ServiceManagementModal({
     }
     
     onClose();
-  };
+  }, [currentOrder, setSelectedService, setModalStep, setIsCheckoutMode, setCurrentOrder, onClose]);
 
   if (!show || !selectedRoom || !currentOrder) return null;
 
@@ -659,4 +660,6 @@ export default function ServiceManagementModal({
       </div>
     </div>
   );
-} 
+});
+
+export default ServiceManagementModal; 
