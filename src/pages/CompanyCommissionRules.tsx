@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useSettingsContext } from '../context/SettingsContext';
 import { CompanyCommissionRule } from '../types';
 import { Plus, Edit, Trash2, Check, X, Shield } from 'lucide-react';
 import Notification from '../components/Notification';
 
 export default function CompanyCommissionRules() {
-  const { state, addCompanyCommissionRule, updateCompanyCommissionRule, deleteCompanyCommissionRule } = useAppContext();
+  const { companyCommissionRules, addCompanyCommissionRule, updateCompanyCommissionRule, deleteCompanyCommissionRule } = useSettingsContext();
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingRule, setDeletingRule] = useState<any>(null);
@@ -162,7 +162,7 @@ export default function CompanyCommissionRules() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {state.companyCommissionRules?.map((rule) => (
+              {companyCommissionRules?.map((rule) => (
                 <tr key={rule.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">

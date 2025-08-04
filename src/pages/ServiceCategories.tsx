@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useServiceContext } from '../context/ServiceContext';
 import { ServiceCategory } from '../types';
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
 
 export default function ServiceCategories() {
-  const { state, addServiceCategory, updateServiceCategory, deleteServiceCategory } = useAppContext();
+  const { serviceCategories, addServiceCategory, updateServiceCategory, deleteServiceCategory } = useServiceContext();
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingCategory, setDeletingCategory] = useState<ServiceCategory | null>(null);
@@ -78,7 +78,7 @@ export default function ServiceCategories() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {state.serviceCategories.map((category) => (
+              {serviceCategories.map((category) => (
                 <tr key={category.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {category.name}

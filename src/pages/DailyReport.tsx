@@ -1,12 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useOrderContext } from '../context/OrderContext';
+import { useSettingsContext } from '../context/SettingsContext';
 import { Calendar, DollarSign, Users, TrendingUp } from 'lucide-react';
 import { getBusinessDateString, getBusinessDateStringForTime } from '../utils/timeUtils';
 import { formatCurrency } from '../utils/currencyUtils';
 
 
 export default function StatisticsReport() {
-  const { state } = useAppContext();
+  const { orders } = useOrderContext();
+  const { businessSettings } = useSettingsContext();
   
   // 使用 localStorage 持久化日期状态，避免页面切换时重置
   const [startDate, setStartDate] = useState(() => {
@@ -15,7 +17,7 @@ export default function StatisticsReport() {
       return savedStartDate;
     }
     // 如果没有保存的日期，使用当前业务日期
-    return getBusinessDateString(state.businessSettings);
+    return getBusinessDateString(businessSettings);
   });
 
   const [endDate, setEndDate] = useState(() => {
@@ -24,7 +26,7 @@ export default function StatisticsReport() {
       return savedEndDate;
     }
     // 如果没有保存的日期，使用当前业务日期
-    return getBusinessDateString(state.businessSettings);
+    return getBusinessDateString(businessSettings);
   });
 
   // 分页状态
@@ -45,9 +47,9 @@ export default function StatisticsReport() {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999); // 包含结束日期
 
-    const periodOrders = state.orders?.filter(order => {
+    const periodOrders = orders?.filter(order => {
       // 使用业务日期进行过滤，考虑经营时间和时区
-      const orderBusinessDate = getBusinessDateStringForTime(new Date(order.createdAt), state.businessSettings);
+      const orderBusinessDate = getBusinessDateStringForTime(new Date(order.createdAt), businessSettings);
       // 只统计已完成的订单
       return orderBusinessDate >= startDate && orderBusinessDate <= endDate && order.status === 'completed';
     }) || [];
@@ -204,7 +206,7 @@ export default function StatisticsReport() {
         pageSize
       }
     };
-  }, [startDate, endDate, currentPage, pageSize, state.orders, state.technicians, state.serviceItems, state.businessSettings]);
+  }, [startDate, endDate, currentPage, pageSize, orders, businessSettings]);
 
   return (
     <div className="space-y-6">
@@ -230,7 +232,7 @@ export default function StatisticsReport() {
           <button 
             onClick={() => {
               // 根据24小时营业逻辑计算当前业务日期
-              const currentBusinessDate = getBusinessDateString(state.businessSettings);
+              const currentBusinessDate = getBusinessDateString(businessSettings);
               setStartDate(currentBusinessDate);
               setEndDate(currentBusinessDate);
             }}
@@ -267,7 +269,7 @@ export default function StatisticsReport() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">总收入</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(statisticsReport.totalRevenue, state)}
+                {formatCurrency(statisticsReport.totalRevenue, businessSettings)}
               </p>
             </div>
           </div>
@@ -282,7 +284,7 @@ export default function StatisticsReport() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">总利润</p>
               <p className={`text-2xl font-bold ${statisticsReport.totalProfit < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                {formatCurrency(statisticsReport.totalProfit, state)}
+                {formatCurrency(statisticsReport.totalProfit, businessSettings)}
               </p>
             </div>
           </div>
@@ -297,7 +299,7 @@ export default function StatisticsReport() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">技师总提成</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(statisticsReport.totalTechnicianCommission, state)}
+                {formatCurrency(statisticsReport.totalTechnicianCommission, businessSettings)}
               </p>
             </div>
           </div>
@@ -312,7 +314,7 @@ export default function StatisticsReport() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">销售员总提成</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(statisticsReport.totalSalespersonCommission, state)}
+                {formatCurrency(statisticsReport.totalSalespersonCommission, businessSettings)}
               </p>
             </div>
           </div>
@@ -327,7 +329,7 @@ export default function StatisticsReport() {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">公司总抽成</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(statisticsReport.totalCompanyCommission, state)}
+                {formatCurrency(statisticsReport.totalCompanyCommission, businessSettings)}
               </p>
             </div>
           </div>
@@ -405,23 +407,23 @@ export default function StatisticsReport() {
                           {order.id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(order.totalAmount, state)}
+                          {formatCurrency(order.totalAmount, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(order.receivedAmount || 0, state)}
+                          {formatCurrency(order.receivedAmount || 0, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(order.companyCommissionAmount || 0, state)}
+                          {formatCurrency(order.companyCommissionAmount || 0, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(order.totalTechnicianCommission, state)}
+                          {formatCurrency(order.totalTechnicianCommission, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(order.totalSalespersonCommission, state)}
+                          {formatCurrency(order.totalSalespersonCommission, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           <span className={(order.profit || 0) < 0 ? 'text-red-600' : 'text-green-600'}>
-                            {formatCurrency(order.profit || 0, state)}
+                            {formatCurrency(order.profit || 0, businessSettings)}
                           </span>
                         </td>
                       </tr>
@@ -442,38 +444,38 @@ export default function StatisticsReport() {
                           {formatCurrency(
                             statisticsReport.pagination.totalItems > 0 ? 
                             statisticsReport.profitStats.reduce((sum, order) => sum + order.totalAmount, 0) : 0
-                          , state)}
+                          , businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           {formatCurrency(
                             statisticsReport.pagination.totalItems > 0 ? 
                             statisticsReport.profitStats.reduce((sum, order) => sum + (order.receivedAmount || 0), 0) : 0
-                          , state)}
+                          , businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           {formatCurrency(
                             statisticsReport.pagination.totalItems > 0 ? 
                             statisticsReport.profitStats.reduce((sum, order) => sum + order.companyCommissionAmount, 0) : 0
-                          , state)}
+                          , businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           {formatCurrency(
                             statisticsReport.pagination.totalItems > 0 ? 
                             statisticsReport.profitStats.reduce((sum, order) => sum + order.totalTechnicianCommission, 0) : 0
-                          , state)}
+                          , businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           {formatCurrency(
                             statisticsReport.pagination.totalItems > 0 ? 
                             statisticsReport.profitStats.reduce((sum, order) => sum + order.totalSalespersonCommission, 0) : 0
-                          , state)}
+                          , businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           <span className={statisticsReport.pagination.totalItems > 0 && statisticsReport.profitStats.reduce((sum, order) => sum + (order.profit || 0), 0) < 0 ? 'text-red-600' : 'text-green-600'}>
                             {formatCurrency(
                               statisticsReport.pagination.totalItems > 0 ? 
                               statisticsReport.profitStats.reduce((sum, order) => sum + (order.profit || 0), 0) : 0
-                            , state)}
+                            , businessSettings)}
                           </span>
                         </td>
                       </tr>
@@ -527,10 +529,10 @@ export default function StatisticsReport() {
                           {tech.orderCount}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                          {formatCurrency(tech.totalRevenue, state)}
+                          {formatCurrency(tech.totalRevenue, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                          {formatCurrency(tech.totalCommission, state)}
+                          {formatCurrency(tech.totalCommission, businessSettings)}
                         </td>
                       </tr>
                     ))}
@@ -552,12 +554,12 @@ export default function StatisticsReport() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
                             {formatCurrency(
                               statisticsReport.technicianStats.reduce((sum, tech) => sum + tech.totalRevenue, 0)
-                            , state)}
+                            , businessSettings)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
                             {formatCurrency(
                               statisticsReport.technicianStats.reduce((sum, tech) => sum + tech.totalCommission, 0)
-                            , state)}
+                            , businessSettings)}
                           </td>
                         </tr>
                       </tbody>
@@ -608,10 +610,10 @@ export default function StatisticsReport() {
                               {sales.orderCount}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                              {formatCurrency(sales.totalRevenue, state)}
+                              {formatCurrency(sales.totalRevenue, businessSettings)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                              {formatCurrency(sales.totalCommission, state)}
+                              {formatCurrency(sales.totalCommission, businessSettings)}
                             </td>
                           </tr>
                         ))}
@@ -633,12 +635,12 @@ export default function StatisticsReport() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
                             {formatCurrency(
                               statisticsReport.salespersonStats.reduce((sum, sales) => sum + sales.totalRevenue, 0)
-                            , state)}
+                            , businessSettings)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
                             {formatCurrency(
                               statisticsReport.salespersonStats.reduce((sum, sales) => sum + sales.totalCommission, 0)
-                            , state)}
+                            , businessSettings)}
                           </td>
                         </tr>
                       </tbody>

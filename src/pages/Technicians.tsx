@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useTechnicianContext } from '../context/TechnicianContext';
+import { useServiceContext } from '../context/ServiceContext';
+import { useSettingsContext } from '../context/SettingsContext';
+import { useOrderContext } from '../context/OrderContext';
 import { Technician, ServiceAssignment } from '../types';
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
 import { formatCurrency } from '../utils/currencyUtils';
 import Notification from '../components/Notification';
 
 export default function Technicians() {
-  const { state, addTechnician, updateTechnician, deleteTechnician } = useAppContext();
+  const { technicians, addTechnician, updateTechnician, deleteTechnician } = useTechnicianContext();
+  const { serviceItems } = useServiceContext();
+  const { countries, companyCommissionRules, businessSettings } = useSettingsContext();
+  const { orders } = useOrderContext();
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingTechnician, setDeletingTechnician] = useState<Technician | null>(null);
@@ -46,7 +52,7 @@ export default function Technicians() {
     
     // 检查是否有未完成的订单
     if (editingId) {
-      const hasUnfinishedOrders = state.orders?.some(order => 
+      const hasUnfinishedOrders = orders?.some(order => 
         order.status === 'in_progress' && 
         order.items?.some(item => item.technicianId === editingId)
       );
@@ -177,12 +183,12 @@ export default function Technicians() {
     if (!serviceId) {
       return '未设置服务';
     }
-    const service = state.serviceItems?.find(s => s.id === serviceId);
+    const service = serviceItems?.find(s => s.id === serviceId);
     if (!service) {
       console.log('🔍 调试服务信息:', {
         serviceId,
-        serviceItemsCount: state.serviceItems?.length || 0,
-        serviceItems: state.serviceItems?.map(s => ({ id: s.id, name: s.name }))
+        serviceItemsCount: serviceItems?.length || 0,
+        serviceItems: serviceItems?.map(s => ({ id: s.id, name: s.name }))
       });
     }
     return service ? service.name : '未知服务';
@@ -192,7 +198,7 @@ export default function Technicians() {
 
   const getCountryName = (countryId: string) => {
 
-    const country = state.countries?.find(c => c.id === countryId);
+    const country = countries?.find(c => c.id === countryId);
     return country ? country.name : '未知国家';
   };
 
@@ -269,7 +275,7 @@ export default function Technicians() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {state.technicians.map((technician) => (
+              {technicians.map((technician) => (
                 <tr key={technician.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {technician.employeeId}
@@ -383,7 +389,7 @@ export default function Technicians() {
                         required
                       >
                         <option value="">请选择国家</option>
-                        {state.countries.map((country) => (
+                        {countries.map((country) => (
                           <option key={country.id} value={country.id}>
                             {country.name}
                           </option>
@@ -487,7 +493,7 @@ export default function Technicians() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       >
                         <option value="">选择服务项目</option>
-                        {state.serviceItems?.map((service) => (
+                        {serviceItems?.map((service) => (
                           <option key={service.id} value={service.id}>
                             {service.name}
                           </option>
@@ -525,7 +531,7 @@ export default function Technicians() {
                         onChange={(e) => setNewService({ ...newService, companyCommissionRuleId: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       >
-                        {state.companyCommissionRules?.map((rule) => (
+                        {companyCommissionRules?.map((rule) => (
                           <option key={rule.id} value={rule.id}>
                             {rule.name} {rule.isDefault && '(默认)'}
                           </option>
@@ -563,7 +569,7 @@ export default function Technicians() {
                                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                   >
                                     <option value="">选择服务</option>
-                                    {state.serviceItems?.map((item) => (
+                                    {serviceItems?.map((item) => (
                                       <option key={item.id} value={item.id}>
                                         {item.name}
                                       </option>
@@ -599,7 +605,7 @@ export default function Technicians() {
                                     onChange={(e) => setEditingService({ ...editingService, companyCommissionRuleId: e.target.value })}
                                     className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                   >
-                                    {state.companyCommissionRules?.map((rule) => (
+                                    {companyCommissionRules?.map((rule) => (
                                       <option key={rule.id} value={rule.id}>
                                         {rule.name}
                                       </option>
@@ -629,11 +635,11 @@ export default function Technicians() {
                             <div className="flex-1">
                               <div className="font-semibold text-gray-900">{getServiceName(service.serviceId)}</div>
                               <div className="text-sm text-gray-600">
-                                价格: {formatCurrency(service.price, state)}
-                                {service.commission > 0 && ` | 抽成: ${formatCurrency(service.commission, state)}`}
+                                价格: {formatCurrency(service.price, businessSettings)}
+                                {service.commission > 0 && ` | 抽成: ${formatCurrency(service.commission, businessSettings)}`}
                                 {service.companyCommissionRuleId && (
                                   <span className="ml-2">
-                                    | 分成方案: {state.companyCommissionRules?.find(r => r.id === service.companyCommissionRuleId)?.name || '未知'}
+                                    | 分成方案: {companyCommissionRules?.find(r => r.id === service.companyCommissionRuleId)?.name || '未知'}
                                   </span>
                                 )}
                               </div>
@@ -727,7 +733,7 @@ export default function Technicians() {
                 <button
                   onClick={() => {
                     // 检查是否有进行中的订单
-                    const hasInProgressOrders = state.orders?.some(order => 
+                    const hasInProgressOrders = orders?.some(order => 
                       order.status === 'in_progress' && 
                       order.items?.some(item => item.technicianId === deletingTechnician.id)
                     );

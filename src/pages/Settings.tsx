@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useSettingsContext } from '../context/SettingsContext';
 import { Settings as SettingsIcon, Clock, Globe, DollarSign } from 'lucide-react';
 import Notification from '../components/Notification';
 
 export default function Settings() {
-  const { state, updateBusinessSettings } = useAppContext();
+  const { businessSettings, updateBusinessSettings } = useSettingsContext();
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' | 'warning' });
   
   // 显示通知
@@ -30,16 +30,16 @@ export default function Settings() {
 
   const [formData, setFormData] = useState({
     businessHours: {
-      startTime: state.businessSettings?.businessHours?.startTime || defaultSettings.businessHours.startTime,
-      endTime: state.businessSettings?.businessHours?.endTime || defaultSettings.businessHours.endTime,
-      is24Hour: state.businessSettings?.businessHours?.is24Hour || defaultSettings.businessHours.is24Hour,
-      crossDay: state.businessSettings?.businessHours?.crossDay || defaultSettings.businessHours.crossDay,
-      newDayStartTime: state.businessSettings?.businessHours?.newDayStartTime || defaultSettings.businessHours.newDayStartTime
+      startTime: businessSettings?.businessHours?.startTime || defaultSettings.businessHours.startTime,
+      endTime: businessSettings?.businessHours?.endTime || defaultSettings.businessHours.endTime,
+      is24Hour: businessSettings?.businessHours?.is24Hour || defaultSettings.businessHours.is24Hour,
+      crossDay: businessSettings?.businessHours?.crossDay || defaultSettings.businessHours.crossDay,
+      newDayStartTime: businessSettings?.businessHours?.newDayStartTime || defaultSettings.businessHours.newDayStartTime
     },
-    timezone: state.businessSettings?.timezone || defaultSettings.timezone,
-    baseCurrencyName: state.businessSettings?.baseCurrencyName || defaultSettings.baseCurrencyName,
-    baseCurrencyCode: state.businessSettings?.baseCurrencyCode || defaultSettings.baseCurrencyCode,
-    baseCurrencySymbol: state.businessSettings?.baseCurrencySymbol || defaultSettings.baseCurrencySymbol
+    timezone: businessSettings?.timezone || defaultSettings.timezone,
+    baseCurrencyName: businessSettings?.baseCurrencyName || defaultSettings.baseCurrencyName,
+    baseCurrencyCode: businessSettings?.baseCurrencyCode || defaultSettings.baseCurrencyCode,
+    baseCurrencySymbol: businessSettings?.baseCurrencySymbol || defaultSettings.baseCurrencySymbol
   });
 
   const handleSubmit = (e: React.FormEvent) => {

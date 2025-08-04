@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useSettingsContext } from '../context/SettingsContext';
 import { Country } from '../types';
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
 
 export default function Countries() {
-  const { state, addCountry, updateCountry, deleteCountry } = useAppContext();
+  const { countries, addCountry, updateCountry, deleteCountry } = useSettingsContext();
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingCountry, setDeletingCountry] = useState<Country | null>(null);
@@ -90,7 +90,7 @@ export default function Countries() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {state.countries.map((country) => (
+              {countries.map((country) => (
                 <tr key={country.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {country.name}

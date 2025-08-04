@@ -1,6 +1,7 @@
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AppProvider, useAppContext } from './context/AppContext';
+import { AppProvider } from './context/AppProvider';
+import { useConnectionContext } from './context/ConnectionContext';
 import Layout from './components/Layout';
 import LoadingSpinner from './components/LoadingSpinner';
 import Dashboard from './pages/Dashboard';
@@ -16,7 +17,7 @@ import Settings from './pages/Settings';
 import StatisticsReport from './pages/DailyReport';
 
 function AppContent() {
-  const { isLoading, isConnected } = useAppContext();
+  const { isLoading, isConnected } = useConnectionContext();
 
   // 如果正在加载，显示加载动画
   if (isLoading) {

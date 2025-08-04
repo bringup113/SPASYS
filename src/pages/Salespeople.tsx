@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useSalespersonContext } from '../context/SalespersonContext';
+import { useSettingsContext } from '../context/SettingsContext';
 import { Salesperson } from '../types';
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
 import { getBaseCurrencySymbol, formatCurrency } from '../utils/currencyUtils';
 
 export default function Salespeople() {
-  const { state, addSalesperson, updateSalesperson, deleteSalesperson } = useAppContext();
+  const { salespeople, addSalesperson, updateSalesperson, deleteSalesperson } = useSalespersonContext();
+  const { businessSettings } = useSettingsContext();
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingSalesperson, setDeletingSalesperson] = useState<any>(null);
@@ -91,7 +93,7 @@ export default function Salespeople() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {state.salespeople.map((salesperson) => (
+              {salespeople.map((salesperson) => (
                 <tr key={salesperson.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {salesperson.name}
@@ -101,7 +103,7 @@ export default function Salespeople() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {salesperson.commissionType === 'fixed' 
-                      ? formatCurrency(salesperson.commissionRate, state)
+                      ? formatCurrency(salesperson.commissionRate, businessSettings)
                       : `${salesperson.commissionRate}%`
                     }
                   </td>
@@ -205,7 +207,7 @@ export default function Salespeople() {
                     />
                     <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                       <span className="text-gray-500 text-sm font-medium">
-                        {formData.commissionType === 'percentage' ? '%' : getBaseCurrencySymbol(state)}
+                        {formData.commissionType === 'percentage' ? '%' : getBaseCurrencySymbol(businessSettings)}
                       </span>
                     </div>
                   </div>

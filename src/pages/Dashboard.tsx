@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useOrderContext } from '../context/OrderContext';
+import { useServiceContext } from '../context/ServiceContext';
+import { useTechnicianContext } from '../context/TechnicianContext';
+import { useRoomContext } from '../context/RoomContext';
+import { useSettingsContext } from '../context/SettingsContext';
+import { useSalespersonContext } from '../context/SalespersonContext';
 import { 
   Building2, 
   Package, 
@@ -9,7 +14,6 @@ import {
   XCircle,
   Plus,
   AlertTriangle,
-  Play,
   Timer,
   CreditCard,
   Trash2
@@ -26,12 +30,14 @@ interface RoomCardProps {
 }
 
 function RoomCard({ room, onRoomClick, currentOrder }: RoomCardProps) {
-  const { state } = useAppContext();
+  const { serviceItems } = useServiceContext();
+  const { technicians } = useTechnicianContext();
+  const { businessSettings } = useSettingsContext();
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isOverdue, setIsOverdue] = useState(false);
 
   const getServiceName = (serviceId: string) => {
-    const service = state.serviceItems?.find((s: any) => s.id === serviceId);
+    const service = serviceItems?.find((s: any) => s.id === serviceId);
     return service ? service.name : '未知服务';
   };
 
@@ -43,7 +49,7 @@ function RoomCard({ room, onRoomClick, currentOrder }: RoomCardProps) {
         const now = new Date().getTime();
         const startTime = new Date(currentOrder.updatedAt).getTime();
         const totalDuration = currentOrder.items.reduce((total: number, item: OrderItem) => {
-          const service = state.serviceItems?.find((s: any) => s.id === item.serviceId);
+          const service = serviceItems?.find((s: any) => s.id === item.serviceId);
           return total + (service?.duration || 0);
         }, 0);
         const endTime = startTime + (totalDuration * 60 * 1000);
@@ -60,7 +66,7 @@ function RoomCard({ room, onRoomClick, currentOrder }: RoomCardProps) {
 
       return () => clearInterval(timer);
     }
-  }, [currentOrder, state.serviceItems]);
+  }, [currentOrder, serviceItems]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -135,13 +141,13 @@ function RoomCard({ room, onRoomClick, currentOrder }: RoomCardProps) {
           <div className="space-y-3">
             <div className="space-y-3">
               {currentOrder.items.map((item: OrderItem, index: number) => {
-                const technician = state.technicians?.find((t: any) => t.id === item.technicianId);
+                const technician = technicians?.find((t: any) => t.id === item.technicianId);
                 
                 return (
                   <div key={index} className="bg-white bg-opacity-90 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-50 shadow-sm">
                     <div className="flex justify-between items-start mb-2">
                       <span className="font-semibold text-gray-900 text-sm">{getServiceName(item.serviceId)}</span>
-                      <span className="text-sm font-medium text-blue-600">{formatCurrency(item.price, state)}</span>
+                                              <span className="text-sm font-medium text-blue-600">{formatCurrency(item.price, businessSettings)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-600">
@@ -149,7 +155,7 @@ function RoomCard({ room, onRoomClick, currentOrder }: RoomCardProps) {
                       </span>
                       {item.technicianCommission > 0 && (
                         <span className="text-xs text-green-600 font-medium">
-                          抽成: {formatCurrency(item.technicianCommission, state)}
+                          抽成: {formatCurrency(item.technicianCommission, businessSettings)}
                         </span>
                       )}
                     </div>
@@ -166,15 +172,33 @@ function RoomCard({ room, onRoomClick, currentOrder }: RoomCardProps) {
 
 export default function Dashboard() {
   const { 
-    state, 
+    orders, 
     addOrder, 
     updateOrder, 
-    updateOrderStatus,
+    updateOrderStatus
+  } = useOrderContext();
+  const { 
+    rooms, 
     updateRoom, 
-    updateTechnicianStatus,
     addTemporaryRoom,
     deleteRoom
-  } = useAppContext();
+  } = useRoomContext();
+  const { 
+    technicians, 
+    updateTechnicianStatus
+  } = useTechnicianContext();
+  const { 
+    serviceItems 
+  } = useServiceContext();
+  const { 
+    businessSettings 
+  } = useSettingsContext();
+  const { 
+    salespeople 
+  } = useSalespersonContext();
+  const { 
+    companyCommissionRules 
+  } = useSettingsContext();
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
   const [selectedService, setSelectedService] = useState<any>(null);
   const [modalStep, setModalStep] = useState<'service' | 'technician'>('service');
@@ -204,20 +228,20 @@ export default function Dashboard() {
   // 监听状态变化
   useEffect(() => {
     // 状态更新完成，无需强制刷新
-  }, [state.rooms, state.orders, state.technicians]);
+  }, [rooms, orders, technicians]);
 
   // 监听当前订单变化，确保左侧列表实时更新
   useEffect(() => {
     if (currentOrder) {
       // 状态更新完成，无需强制刷新
     }
-  }, [state.orders, currentOrder]);
+  }, [orders, currentOrder]);
 
   // 检查并删除过期的临时房间
   useEffect(() => {
     const checkExpiredRooms = () => {
       const now = new Date();
-      state.rooms?.forEach(room => {
+      rooms?.forEach(room => {
         if (room.isTemporary && room.expiresAt) {
           const expiresAt = new Date(room.expiresAt);
           if (now > expiresAt) {
@@ -231,30 +255,30 @@ export default function Dashboard() {
     const interval = setInterval(checkExpiredRooms, 60000); // 每分钟检查一次
 
     return () => clearInterval(interval);
-  }, [state.rooms, deleteRoom]);
+  }, [rooms, deleteRoom]);
 
   const stats = [
     {
       name: '房间总数',
-      value: state.rooms?.length || 0,
+      value: rooms?.length || 0,
       icon: Building2,
       color: 'bg-blue-500',
     },
     {
       name: '可用房间',
-      value: state.rooms?.filter(room => room.status === 'available').length || 0,
+      value: rooms?.filter(room => room.status === 'available').length || 0,
       icon: Building2,
       color: 'bg-green-500',
     },
     {
       name: '可用技师',
-      value: state.technicians?.filter(tech => tech.status === 'available').length || 0,
+      value: technicians?.filter(tech => tech.status === 'available').length || 0,
       icon: Users,
       color: 'bg-orange-500',
     },
     {
       name: '进行中订单',
-      value: state.orders?.filter(order => order.status === 'in_progress').length || 0,
+      value: orders?.filter(order => order.status === 'in_progress').length || 0,
       icon: Clock,
       color: 'bg-purple-500',
     },
@@ -288,7 +312,7 @@ export default function Dashboard() {
       setShowServiceManagementModal(true);
     } else if (room.status === 'occupied') {
       // 查找该房间的进行中订单
-      const roomOrder = state.orders?.find(order => 
+      const roomOrder = orders?.find(order => 
         order.roomId === room.id && order.status === 'in_progress'
       );
       
@@ -312,19 +336,16 @@ export default function Dashboard() {
 
 
   const getServiceName = (serviceId: string) => {
-    const service = state.serviceItems?.find(s => s.id === serviceId);
+    const service = serviceItems?.find(s => s.id === serviceId);
     return service ? service.name : '未知服务';
   };
 
   const getTechnicianName = (technicianId: string) => {
-    const technician = state.technicians?.find(t => t.id === technicianId);
+    const technician = technicians?.find(t => t.id === technicianId);
     return technician ? technician.employeeId : '未知技师';
   };
 
-  const getCountryName = (countryId: string) => {
-    const country = state.countries?.find(c => c.id === countryId);
-    return country ? country.name : '未知国家';
-  };
+
 
 
 
@@ -364,7 +385,7 @@ export default function Dashboard() {
       const receivedAmount = parseFloat(checkoutData.receivedAmount) || currentOrder.totalAmount;
 
       // 更新订单项目，为每个项目分配销售员信息
-      const salesperson = checkoutData.selectedSalespersonId ? state.salespeople?.find(s => s.id === checkoutData.selectedSalespersonId) : null;
+      const salesperson = checkoutData.selectedSalespersonId ? salespeople?.find(s => s.id === checkoutData.selectedSalespersonId) : null;
       const discountRate = CommissionCalculator.calculateDiscountRate(receivedAmount, currentOrder.totalAmount);
       
       const updatedItems = currentOrder.items.map((item: any) => {
@@ -382,7 +403,7 @@ export default function Dashboard() {
         };
         
         // 3. 再计算公司抽成（基于减去销售员提成后的利润）
-        const companyCommissionRule = state.companyCommissionRules?.find(
+        const companyCommissionRule = companyCommissionRules?.find(
           rule => rule.id === item.companyCommissionRuleId
         );
         
@@ -438,7 +459,7 @@ export default function Dashboard() {
         }),
         // 处理房间状态
         (async () => {
-          const room = state.rooms?.find(r => r.id === currentOrder.roomId);
+          const room = rooms?.find(r => r.id === currentOrder.roomId);
           if (room?.isTemporary) {
             await deleteRoom(room.id);
           } else {
@@ -495,7 +516,7 @@ export default function Dashboard() {
       // 更新技师状态
       if (item.technicianId) {
         // 检查技师是否还有其他进行中的项目
-        const hasOtherInProgressItems = state.orders?.some(o => 
+        const hasOtherInProgressItems = orders?.some(o => 
           o.status === 'in_progress' && 
           o.id !== currentOrder.id &&
           o.items.some(i => i.technicianId === item.technicianId)
@@ -539,7 +560,7 @@ export default function Dashboard() {
       const receivedAmount = parseFloat(checkoutData.receivedAmount) || currentOrder.totalAmount;
 
       // 更新订单项目，为每个项目分配销售员信息
-      const salesperson = checkoutData.selectedSalespersonId ? state.salespeople?.find(s => s.id === checkoutData.selectedSalespersonId) : null;
+      const salesperson = checkoutData.selectedSalespersonId ? salespeople?.find(s => s.id === checkoutData.selectedSalespersonId) : null;
       const discountRate = CommissionCalculator.calculateDiscountRate(receivedAmount, currentOrder.totalAmount);
       
       const updatedItems = currentOrder.items.map((item: any) => {
@@ -557,7 +578,7 @@ export default function Dashboard() {
         };
         
         // 3. 再计算公司抽成（基于减去销售员提成后的利润）
-        const companyCommissionRule = state.companyCommissionRules?.find(
+        const companyCommissionRule = companyCommissionRules?.find(
           rule => rule.id === item.companyCommissionRuleId
         );
         
@@ -587,7 +608,7 @@ export default function Dashboard() {
         }),
         // 处理房间状态
         (async () => {
-          const room = state.rooms?.find(r => r.id === currentOrder.roomId);
+          const room = rooms?.find(r => r.id === currentOrder.roomId);
           if (room?.isTemporary) {
             await deleteRoom(room.id);
           } else {
@@ -657,8 +678,8 @@ export default function Dashboard() {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">房间状态</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {state.rooms?.map((room) => {
-            const currentOrder = state.orders?.find(order => 
+          {rooms?.map((room) => {
+            const currentOrder = orders?.find(order => 
               order.roomId === room.id && order.status === 'in_progress'
             );
             
@@ -719,7 +740,7 @@ export default function Dashboard() {
                             </div>
                             <div>
                               <span className="text-gray-500">价格:</span>
-                              <span className="ml-2 font-bold text-green-600">{formatCurrency(item.price, state)}</span>
+                              <span className="ml-2 font-bold text-green-600">{formatCurrency(item.price, businessSettings)}</span>
                             </div>
                           </div>
                         </div>
@@ -749,7 +770,7 @@ export default function Dashboard() {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-900">总计</span>
                     <span className="text-2xl font-bold text-green-600">
-                      {formatCurrency(currentOrder.totalAmount, state)}
+                      {formatCurrency(currentOrder.totalAmount, businessSettings)}
                     </span>
                   </div>
                 </div>
@@ -776,9 +797,9 @@ export default function Dashboard() {
                       选择服务项目
                     </label>
                     <div className="grid grid-cols-2 gap-3">
-                      {state.serviceItems?.map((service) => {
+                      {serviceItems?.map((service) => {
                         // 计算该服务有多少个可用技师
-                        const availableTechnicians = state.technicians?.filter(tech => 
+                        const availableTechnicians = technicians?.filter(tech => 
                           tech.status === 'available' && 
                           tech.services?.some(s => s.serviceId === service.id)
                         ) || [];
@@ -848,7 +869,7 @@ export default function Dashboard() {
                       选择技师
                     </label>
                     <div className="grid grid-cols-2 gap-3">
-                      {state.technicians?.filter(tech => tech.status === 'available').map((technician) => {
+                      {technicians?.filter(tech => tech.status === 'available').map((technician) => {
                         const serviceAssignment = technician.services?.find(s => s.serviceId === selectedService.id);
                         if (!serviceAssignment) return null;
                         
@@ -857,7 +878,7 @@ export default function Dashboard() {
                             key={technician.id}
                             onClick={async () => {
                               // 获取该技师此服务使用的公司分成方案
-                              const companyCommissionRule = state.companyCommissionRules?.find(
+                              const companyCommissionRule = companyCommissionRules?.find(
                                 rule => rule.id === serviceAssignment.companyCommissionRuleId
                               );
                               
@@ -897,11 +918,11 @@ export default function Dashboard() {
                                   {technician.employeeId}
                                 </div>
                                 <div className="text-sm text-gray-600 mt-1">
-                                  💰 {formatCurrency(serviceAssignment.price, state)}
+                                  💰 {formatCurrency(serviceAssignment.price, businessSettings)}
                                 </div>
                                 {serviceAssignment.commission > 0 && (
                                   <div className="text-sm text-gray-500 mt-1">
-                                    抽成: {formatCurrency(serviceAssignment.commission, state)}
+                                    抽成: {formatCurrency(serviceAssignment.commission, businessSettings)}
                                   </div>
                                 )}
                               </div>
@@ -950,7 +971,7 @@ export default function Dashboard() {
                           消费金额
                         </label>
                         <div className="text-2xl font-bold text-green-600">
-                          {formatCurrency(currentOrder.totalAmount, state)}
+                          {formatCurrency(currentOrder.totalAmount, businessSettings)}
                         </div>
                       </div>
 
@@ -998,7 +1019,7 @@ export default function Dashboard() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="">选择销售员</option>
-                          {state.salespeople?.map(salesperson => (
+                          {salespeople?.map(salesperson => (
                             <option key={salesperson.id} value={salesperson.id}>
                               {salesperson.name}
                             </option>
@@ -1273,7 +1294,7 @@ export default function Dashboard() {
                     if (e.key === 'Enter') {
                       if (temporaryRoomName.trim()) {
                         // 检查房间名称是否已存在
-                        const existingRoom = state.rooms?.find(room => room.name === temporaryRoomName.trim());
+                        const existingRoom = rooms?.find(room => room.name === temporaryRoomName.trim());
                         if (existingRoom) {
                           showNotification('房间名称已存在，请使用其他名称', 'error');
                           return;
@@ -1307,7 +1328,7 @@ export default function Dashboard() {
                   onClick={() => {
                     if (temporaryRoomName.trim()) {
                       // 检查房间名称是否已存在
-                      const existingRoom = state.rooms?.find(room => room.name === temporaryRoomName.trim());
+                      const existingRoom = rooms?.find(room => room.name === temporaryRoomName.trim());
                                               if (existingRoom) {
                           showNotification('房间名称已存在，请使用其他名称', 'error');
                           return;
@@ -1363,7 +1384,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">价格:</span>
-                    <span className="font-bold text-green-600">{formatCurrency(deletingItem.item.price, state)}</span>
+                    <span className="font-bold text-green-600">{formatCurrency(deletingItem.item.price, businessSettings)}</span>
                   </div>
                 </div>
               </div>

@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useOrderContext } from '../context/OrderContext';
+import { useServiceContext } from '../context/ServiceContext';
+import { useTechnicianContext } from '../context/TechnicianContext';
+import { useRoomContext } from '../context/RoomContext';
+import { useSettingsContext } from '../context/SettingsContext';
 import { Order, OrderStatus } from '../types';
 import { Eye, CheckCircle, XCircle, AlertCircle, X, Filter, HelpCircle } from 'lucide-react';
 import { formatTime } from '../utils/timeUtils';
@@ -8,7 +12,11 @@ import { CommissionCalculator } from '../utils/commissionUtils';
 import Notification from '../components/Notification';
 
 export default function Orders() {
-  const { state, updateOrderStatus, updateOrder } = useAppContext();
+  const { orders, updateOrderStatus, updateOrder } = useOrderContext();
+  const { serviceItems } = useServiceContext();
+  const { technicians } = useTechnicianContext();
+  const { rooms } = useRoomContext();
+  const { businessSettings, companyCommissionRules } = useSettingsContext();
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -37,7 +45,7 @@ export default function Orders() {
   const [showFilters, setShowFilters] = useState(false);
 
   const getServiceName = (serviceId: string) => {
-    const service = state.serviceItems?.find(s => s.id === serviceId);
+    const service = serviceItems?.find(s => s.id === serviceId);
     return service ? service.name : '未知服务';
   };
 
@@ -47,7 +55,7 @@ export default function Orders() {
     // 优先使用订单中保存的技师工号快照
     if (technicianName) {
       // 检查技师是否还存在
-      const technician = technicianId ? state.technicians?.find(t => t.id === technicianId) : null;
+      const technician = technicianId ? technicians?.find(t => t.id === technicianId) : null;
       
       if (technician) {
         // 技师存在，正常显示
@@ -82,7 +90,7 @@ export default function Orders() {
       return roomName;
     }
     // 如果快照不存在，则从当前房间列表中查找
-    const room = state.rooms?.find(r => r.id === roomId);
+    const room = rooms?.find(r => r.id === roomId);
     return room ? room.name : '未知房间';
   };
 
@@ -123,7 +131,7 @@ export default function Orders() {
     updateOrderStatus(orderId, 'cancelled');
     
     // 更新订单备注，记录取消原因
-    const order = state.orders?.find(o => o.id === orderId);
+    const order = orders?.find(o => o.id === orderId);
     if (order) {
       const updatedNotes = order.notes ? `${order.notes}\n取消原因: ${cancelReason}` : `取消原因: ${cancelReason}`;
       updateOrder(orderId, {
@@ -168,12 +176,12 @@ export default function Orders() {
       order.items,
       receivedAmount,
       discountRate,
-      state.companyCommissionRules || []
+      companyCommissionRules || []
     );
   };
 
   // 筛选订单
-  const filteredOrders = state.orders?.filter(order => {
+  const filteredOrders = orders?.filter(order => {
     // 日期筛选
     if (filters.startDate && new Date(order.createdAt) < new Date(filters.startDate)) {
       return false;
@@ -269,7 +277,7 @@ export default function Orders() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-orange-700">进行中</p>
                 <p className="text-3xl font-bold text-orange-800">
-                  {state.orders?.filter(order => order.status === 'in_progress').length || 0}
+                  {orders?.filter(order => order.status === 'in_progress').length || 0}
                 </p>
               </div>
             </div>
@@ -290,7 +298,7 @@ export default function Orders() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-green-700">已完成</p>
                 <p className="text-3xl font-bold text-green-800">
-                  {state.orders?.filter(order => order.status === 'completed').length || 0}
+                  {orders?.filter(order => order.status === 'completed').length || 0}
                 </p>
               </div>
             </div>
@@ -311,7 +319,7 @@ export default function Orders() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-red-700">已取消</p>
                 <p className="text-3xl font-bold text-red-800">
-                  {state.orders?.filter(order => order.status === 'cancelled').length || 0}
+                  {orders?.filter(order => order.status === 'cancelled').length || 0}
                 </p>
               </div>
             </div>
@@ -372,7 +380,7 @@ export default function Orders() {
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
                 <option value="">全部房间</option>
-                {state.rooms?.map(room => (
+                                        {rooms?.map(room => (
                   <option key={room.id} value={room.id}>{room.name}</option>
                 ))}
               </select>
@@ -387,7 +395,7 @@ export default function Orders() {
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
                 <option value="">全部技师</option>
-                {state.technicians?.map(technician => (
+                                        {technicians?.map(technician => (
                   <option key={technician.id} value={technician.id}>{technician.employeeId}</option>
                 ))}
               </select>
@@ -402,7 +410,7 @@ export default function Orders() {
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
                 <option value="">全部服务</option>
-                {state.serviceItems?.map(service => (
+                                        {serviceItems?.map(service => (
                   <option key={service.id} value={service.id}>{service.name}</option>
                 ))}
               </select>
@@ -436,9 +444,9 @@ export default function Orders() {
                     <p className="text-sm font-medium">筛选结果</p>
                     <p className="text-xs opacity-90">
                       共找到 {filteredOrders.length} 条记录
-                      {state.orders && state.orders.length > 0 && (
-                        <span> (共 {state.orders.length} 条)</span>
-                      )}
+                                      {orders && orders.length > 0 && (
+                  <span> (共 {orders.length} 条)</span>
+                )}
                     </p>
                   </div>
                 </div>
@@ -553,12 +561,12 @@ export default function Orders() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">创建时间:</span>
-                        <span className="font-medium">{formatTime(new Date(selectedOrder.createdAt), state.businessSettings)}</span>
+                        <span className="font-medium">{formatTime(new Date(selectedOrder.createdAt), businessSettings)}</span>
                       </div>
                       {selectedOrder.completedAt && (
                         <div className="flex justify-between">
                           <span className="text-gray-600">完成时间:</span>
-                          <span className="font-medium">{formatTime(new Date(selectedOrder.completedAt), state.businessSettings)}</span>
+                          <span className="font-medium">{formatTime(new Date(selectedOrder.completedAt), businessSettings)}</span>
                         </div>
                       )}
                     </div>
@@ -570,17 +578,17 @@ export default function Orders() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">总金额:</span>
-                        <span className="font-medium">{formatCurrency(calculateOrderTotal(selectedOrder), state)}</span>
+                        <span className="font-medium">{formatCurrency(calculateOrderTotal(selectedOrder), businessSettings)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">实收金额:</span>
-                        <span className="font-medium">{selectedOrder.receivedAmount ? formatCurrency(selectedOrder.receivedAmount, state) : '未设置'}</span>
+                        <span className="font-medium">{selectedOrder.receivedAmount ? formatCurrency(selectedOrder.receivedAmount, businessSettings) : '未设置'}</span>
                       </div>
                       {calculateTechnicianCommission(selectedOrder) > 0 && (
                         <div className="flex justify-between">
                           <span className="text-gray-600">技师总抽成:</span>
                           <span className="font-medium">
-                            {formatCurrency(calculateTechnicianCommission(selectedOrder), state)}
+                            {formatCurrency(calculateTechnicianCommission(selectedOrder), businessSettings)}
                           </span>
                         </div>
                       )}
@@ -588,7 +596,7 @@ export default function Orders() {
                         <div className="flex justify-between">
                           <span className="text-gray-600">销售员抽成:</span>
                           <span className="font-medium">
-                            {formatCurrency(calculateSalespersonCommission(selectedOrder), state)}
+                            {formatCurrency(calculateSalespersonCommission(selectedOrder), businessSettings)}
                           </span>
                         </div>
                       )}
@@ -596,7 +604,7 @@ export default function Orders() {
                         <div className="flex justify-between">
                           <span className="text-gray-600">公司分成:</span>
                           <span className="font-medium">
-                            {formatCurrency(calculateCompanyCommission(selectedOrder), state)}
+                            {formatCurrency(calculateCompanyCommission(selectedOrder), businessSettings)}
                           </span>
                         </div>
                       )}
@@ -604,7 +612,7 @@ export default function Orders() {
                         <div className="flex justify-between">
                           <span className="text-gray-600">订单利润:</span>
                           <span className="font-medium">
-                            {formatCurrency(calculateOrderProfit(selectedOrder), state)}
+                            {formatCurrency(calculateOrderProfit(selectedOrder), businessSettings)}
                           </span>
                         </div>
                       )}
@@ -621,18 +629,18 @@ export default function Orders() {
                         <div key={index} className="border border-gray-200 rounded-lg p-3 bg-white">
                           <div className="flex justify-between items-start mb-2">
                             <span className="font-medium text-gray-900">{getServiceName(item.serviceId)}</span>
-                            <span className="text-sm text-gray-600">{formatCurrency(item.price, state)}</span>
+                            <span className="text-sm text-gray-600">{formatCurrency(item.price, businessSettings)}</span>
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                             <div>技师: {item.technicianName || '未知技师'}</div>
                             {item.technicianCommission > 0 && (
-                              <div>抽成: {formatCurrency(item.technicianCommission, state)}</div>
+                              <div>抽成: {formatCurrency(item.technicianCommission, businessSettings)}</div>
                             )}
                             {item.salespersonName && (
                               <div>销售员: {item.salespersonName}</div>
                             )}
                             {typeof item.salespersonCommission === 'number' && item.salespersonCommission > 0 && (
-                              <div>销售员抽成: {formatCurrency(item.salespersonCommission, state)}</div>
+                              <div>销售员抽成: {formatCurrency(item.salespersonCommission, businessSettings)}</div>
                             )}
                           </div>
                         </div>
@@ -761,10 +769,10 @@ export default function Orders() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center">
-                      {formatCurrency(calculateOrderTotal(order), state)}
+                      {formatCurrency(calculateOrderTotal(order), businessSettings)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center">
-                      {order.receivedAmount ? formatCurrency(order.receivedAmount, state) : '-'}
+                      {order.receivedAmount ? formatCurrency(order.receivedAmount, businessSettings) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>

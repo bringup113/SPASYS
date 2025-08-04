@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useServiceContext } from '../context/ServiceContext';
 import { ServiceItem } from '../types';
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
 
 export default function ServiceItems() {
-  const { state, addServiceItem, updateServiceItem, deleteServiceItem } = useAppContext();
+  const { serviceItems, serviceCategories, addServiceItem, updateServiceItem, deleteServiceItem } = useServiceContext();
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingItem, setDeletingItem] = useState<any>(null);
@@ -49,7 +49,7 @@ export default function ServiceItems() {
   };
 
   const getCategoryName = (categoryId: string) => {
-    const category = state.serviceCategories.find(c => c.id === categoryId);
+    const category = serviceCategories.find(c => c.id === categoryId);
     return category ? category.name : '未分类';
   };
 
@@ -93,7 +93,7 @@ export default function ServiceItems() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {state.serviceItems.map((item) => (
+              {serviceItems.map((item) => (
                 <tr key={item.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {item.name}
@@ -184,7 +184,7 @@ export default function ServiceItems() {
                     required
                   >
                     <option value="">请选择分类</option>
-                    {state.serviceCategories.map((category) => (
+                    {serviceCategories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
                       </option>

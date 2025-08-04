@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
+import { useRoomContext } from '../context/RoomContext';
+import { useOrderContext } from '../context/OrderContext';
 import { Room } from '../types';
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
 import Notification from '../components/Notification';
 
 export default function Rooms() {
-  const { state, addRoom, updateRoom, deleteRoom } = useAppContext();
+  const { rooms, addRoom, updateRoom, deleteRoom } = useRoomContext();
+  const { orders } = useOrderContext();
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingRoom, setDeletingRoom] = useState<Room | null>(null);
@@ -21,9 +23,9 @@ export default function Rooms() {
     
     // 检查是否有未完成的订单
     if (editingId) {
-      const room = state.rooms?.find(r => r.id === editingId);
+      const room = rooms?.find(r => r.id === editingId);
       if (room) {
-        const hasUnfinishedOrders = state.orders?.some(order => 
+        const hasUnfinishedOrders = orders?.some(order => 
           order.roomId === editingId && order.status === 'in_progress'
         );
         
@@ -134,7 +136,7 @@ export default function Rooms() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {state.rooms.map((room) => (
+              {rooms.map((room) => (
                 <tr key={room.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {room.name}
@@ -350,7 +352,7 @@ export default function Rooms() {
                 <button
                   onClick={() => {
                     // 检查是否有进行中的订单
-                    const hasInProgressOrders = state.orders?.some(order => 
+                    const hasInProgressOrders = orders?.some(order => 
                       order.roomId === deletingRoom.id && order.status === 'in_progress'
                     );
                     

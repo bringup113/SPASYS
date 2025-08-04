@@ -139,4 +139,56 @@ export interface AppState {
   orders: Order[]; // 新增：订单列表
   companyCommissionRules: CompanyCommissionRule[]; // 新增：公司分成方案列表
   businessSettings?: BusinessSettings; // 业务设置
+}
+
+// 房间状态类型
+export interface RoomState {
+  rooms: Room[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+// 服务状态类型
+export interface ServiceState {
+  serviceCategories: ServiceCategory[];
+  serviceItems: ServiceItem[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+// 技师状态类型
+export interface TechnicianState {
+  technicians: Technician[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+// 销售员状态类型
+export interface SalespersonState {
+  salespeople: Salesperson[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+// 订单状态类型
+export interface OrderState {
+  orders: Order[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+// 设置状态类型
+export interface SettingsState {
+  countries: Country[];
+  companyCommissionRules: CompanyCommissionRule[];
+  businessSettings?: BusinessSettings;
+  isLoading: boolean;
+  error: string | null;
+}
+
+// 连接状态类型
+export interface ConnectionState {
+  isConnected: boolean;
+  isLoading: boolean;
+  error: string | null;
 } 
