@@ -1,6 +1,6 @@
 import React from 'react';
 import { Order } from '../../types';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle, Clock, DollarSign, MapPin } from 'lucide-react';
 
 interface HandoverModalProps {
   show: boolean;
@@ -17,9 +17,23 @@ const HandoverModal = React.memo(function HandoverModal({
 }: HandoverModalProps) {
   if (!show) return null;
 
+  // 获取订单状态显示
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'in_progress':
+        return { text: '进行中', color: 'bg-blue-100 text-blue-800', icon: Clock };
+      case 'completed':
+        return { text: '已完成', color: 'bg-green-100 text-green-800', icon: CheckCircle };
+      case 'cancelled':
+        return { text: '已取消', color: 'bg-red-100 text-red-800', icon: X };
+      default:
+        return { text: status, color: 'bg-gray-100 text-gray-800', icon: Clock };
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4 transform transition-all duration-300 scale-100">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto mx-4 transform transition-all duration-300 scale-100">
         {/* 模态框头部 */}
         <div className="bg-gradient-to-r from-orange-600 to-orange-700 rounded-t-2xl px-8 py-6 sticky top-0 z-10">
           <div className="flex justify-between items-center">
@@ -50,9 +64,7 @@ const HandoverModal = React.memo(function HandoverModal({
           {pendingOrders.length === 0 ? (
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">所有订单已交接完成</h3>
               <p className="text-gray-600">没有需要交接的订单，可以安全交班。</p>
@@ -71,62 +83,97 @@ const HandoverModal = React.memo(function HandoverModal({
                 </p>
               </div>
 
-              <div className="space-y-4">
-                {pendingOrders.map((order) => (
-                  <div key={order.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">
-                          订单 {order.id}
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          房间: {order.roomName || '未知房间'}
-                        </p>
-                        {order.customerName && (
-                          <p className="text-sm text-gray-600">
-                            客户: {order.customerName}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                          进行中
-                        </span>
-                        <p className="text-sm text-gray-600 mt-1">
-                          总金额: {order.totalAmount}฿
-                        </p>
-                        {order.receivedAmount && (
-                          <p className="text-sm text-green-600">
-                            已收款: {order.receivedAmount}฿
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h5 className="text-sm font-medium text-gray-700">服务项目:</h5>
-                      {order.items.map((item, index) => (
-                        <div key={index} className="text-sm text-gray-600 bg-white rounded p-2">
-                          <div className="flex justify-between">
-                            <span>{item.serviceName || '未知服务'}</span>
-                            <span>{item.price}฿</span>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {pendingOrders.map((order) => {
+                  const statusInfo = getStatusDisplay(order.status);
+                  const StatusIcon = statusInfo.icon;
+                  
+                  return (
+                    <div key={order.id} className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
+                      {/* 订单头部信息 */}
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center mb-2">
+                            <MapPin className="w-4 h-4 text-blue-600 mr-2" />
+                            <span className="font-bold text-lg text-gray-900">
+                              {order.roomName || '未知房间'}
+                            </span>
+                            {order.customerName && (
+                              <span className="text-sm text-gray-500 ml-2">
+                                ({order.customerName})
+                              </span>
+                            )}
                           </div>
-                          {item.technicianName && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              技师: {item.technicianName}
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <span>订单: {order.id}</span>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.color}`}>
+                              <StatusIcon className="w-3 h-3 mr-1" />
+                              {statusInfo.text}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* 金额信息 */}
+                        <div className="text-right">
+                          <div className="flex items-center mb-1">
+                            <DollarSign className="w-4 h-4 text-green-600 mr-1" />
+                            <span className="font-bold text-lg text-green-600">
+                              {order.totalAmount}฿
+                            </span>
+                          </div>
+                          {order.receivedAmount && order.receivedAmount > 0 && (
+                            <div className="text-sm text-green-600">
+                              已收款: {order.receivedAmount}฿
                             </div>
                           )}
                         </div>
-                      ))}
-                    </div>
-
-                    {order.notes && (
-                      <div className="mt-3 p-2 bg-blue-50 rounded text-sm text-blue-800">
-                        <span className="font-medium">备注:</span> {order.notes}
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {/* 服务项目列表 */}
+                      <div className="space-y-2">
+                        <h5 className="text-sm font-medium text-gray-700 flex items-center">
+                          <span className="mr-2">服务项目:</span>
+                          <span className="text-gray-500">({order.items.length}项)</span>
+                        </h5>
+                        {order.items.map((item, index) => (
+                          <div key={index} className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900">
+                                  {item.serviceName || '未知服务'}
+                                </div>
+                                {item.technicianName && (
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    技师: {item.technicianName}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <div className="font-semibold text-gray-900">
+                                  {item.price}฿
+                                </div>
+                                {item.technicianCommission > 0 && (
+                                  <div className="text-xs text-gray-500">
+                                    抽成: {item.technicianCommission}฿
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* 备注信息 */}
+                      {order.notes && (
+                        <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                          <div className="text-sm text-yellow-800">
+                            <span className="font-medium">备注:</span> {order.notes}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
@@ -143,7 +190,7 @@ const HandoverModal = React.memo(function HandoverModal({
                   className="px-8 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all duration-200 font-medium flex items-center shadow-lg hover:shadow-xl"
                 >
                   <AlertTriangle className="h-5 w-5 mr-2" />
-                  确认交接
+                  确认交接 ({pendingOrders.length}个订单)
                 </button>
               </div>
             </div>

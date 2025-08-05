@@ -77,17 +77,23 @@ export default function Dashboard() {
 
   // 获取待交接的订单
   const getPendingHandoverOrders = useCallback(() => {
-    return orders?.filter(order => 
-      order.status === 'in_progress' && 
-      order.handoverStatus === 'pending'
-    ) || [];
+    console.log('所有订单:', orders);
+    const pendingOrders = orders?.filter(order => {
+      console.log('订单ID:', order.id, '状态:', order.status, '交接班状态:', order.handoverStatus);
+      // 获取所有未交接的订单（进行中和已完成），排除已取消的订单
+      return order.status !== 'cancelled' && order.handoverStatus === 'pending';
+    }) || [];
+    console.log('待交接订单:', pendingOrders);
+    return pendingOrders;
   }, [orders]);
 
   // 处理交接班按钮点击
   const handleHandoverClick = useCallback(() => {
     const pendingOrders = getPendingHandoverOrders();
+    console.log('点击交接班按钮，待交接订单数量:', pendingOrders.length);
+    console.log('所有非取消订单:', orders?.filter(order => order.status !== 'cancelled'));
     setShowHandoverModal(true);
-  }, [getPendingHandoverOrders]);
+  }, [getPendingHandoverOrders, orders]);
 
   // 确认交接班
   const handleConfirmHandover = useCallback(async () => {
