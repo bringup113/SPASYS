@@ -135,19 +135,12 @@ const TechnicianList = React.memo(function TechnicianList({
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500 text-center">
                   {technician.services && technician.services.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {technician.services.map((service, index) => (
-                        <div key={index} className="text-xs border border-gray-200 rounded p-2 bg-gray-50">
-                          <div className="font-medium text-gray-900">{getServiceName(service.serviceId)}</div>
-                          <div className="text-gray-600">
-                            价格: {service.price}฿
-                            {service.commission > 0 && ` | 抽成: ${service.commission}฿`}
-                          </div>
-                          {service.companyCommissionRuleId && (
-                            <div className="text-gray-500">
-                              分成方案: {getCommissionRuleName(service.companyCommissionRuleId)}
-                            </div>
-                          )}
+                        <div key={index} className="text-xs">
+                          {getServiceName(service.serviceId)} - {service.price}฿
+                          {service.commission > 0 && ` (抽成: ${service.commission}฿)`}
+                          {service.companyCommissionRuleId && ` | 分成: ${getCommissionRuleName(service.companyCommissionRuleId)}`}
                         </div>
                       ))}
                     </div>
