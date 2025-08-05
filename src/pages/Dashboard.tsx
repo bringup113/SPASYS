@@ -294,7 +294,7 @@ export default function Dashboard() {
 
     try {
       // 使用实收金额，如果没有输入则使用换算后的金额
-      const receivedAmount = parseFloat(checkoutData.receivedAmount) || currentOrder.totalAmount;
+      const receivedAmount = parseFloat(checkoutData.receivedAmount);
 
       // 更新订单项目，为每个项目分配销售员信息
       const salesperson = checkoutData.selectedSalespersonId ? salespeople?.find(s => s.id === checkoutData.selectedSalespersonId) : null;
@@ -419,7 +419,7 @@ export default function Dashboard() {
 
     try {
       // 使用实收金额，如果没有输入则使用换算后的金额
-      const receivedAmount = parseFloat(checkoutData.receivedAmount) || currentOrder.totalAmount;
+      const receivedAmount = parseFloat(checkoutData.receivedAmount);
 
       // 更新订单项目，为每个项目分配销售员信息
       const salesperson = checkoutData.selectedSalespersonId ? salespeople?.find(s => s.id === checkoutData.selectedSalespersonId) : null;
