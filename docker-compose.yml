@@ -17,6 +17,24 @@ services:
       - spa-network
     restart: unless-stopped
 
+  # pgAdmin数据库管理工具
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: spa-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@spa.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - spa-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
   # Redis缓存
   redis:
     image: redis:7-alpine
@@ -89,6 +107,7 @@ services:
 
 volumes:
   postgres_data:
+  pgadmin_data:
   redis_data:
 
 networks:

@@ -5,6 +5,7 @@ import { Edit, Copy, Trash2 } from 'lucide-react';
 interface TechnicianListProps {
   technicians: Technician[];
   countries: any[];
+  serviceItems: any[];
   onEdit: (technician: Technician) => void;
   onCopy: (technician: Technician) => void;
   onDelete: (technician: Technician) => void;
@@ -13,6 +14,7 @@ interface TechnicianListProps {
 const TechnicianList = React.memo(function TechnicianList({
   technicians,
   countries,
+  serviceItems,
   onEdit,
   onCopy,
   onDelete
@@ -26,8 +28,21 @@ const TechnicianList = React.memo(function TechnicianList({
     return map;
   }, [countries]);
 
+  // 缓存服务名称映射
+  const serviceNameMap = useMemo(() => {
+    const map = new Map();
+    serviceItems?.forEach(service => {
+      map.set(service.id, service.name);
+    });
+    return map;
+  }, [serviceItems]);
+
   const getCountryName = (countryId: string) => {
     return countryNameMap.get(countryId) || '未知国家';
+  };
+
+  const getServiceName = (serviceId: string) => {
+    return serviceNameMap.get(serviceId) || '未知服务';
   };
 
   const getStatusColor = (status: string) => {
@@ -80,6 +95,9 @@ const TechnicianList = React.memo(function TechnicianList({
                 状态
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                服务项目
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 操作
               </th>
             </tr>
@@ -100,6 +118,20 @@ const TechnicianList = React.memo(function TechnicianList({
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${technician.statusColor}`}>
                     {technician.statusText}
                   </span>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-500">
+                  {technician.services && technician.services.length > 0 ? (
+                    <div className="space-y-1">
+                      {technician.services.map((service, index) => (
+                        <div key={index} className="text-xs">
+                          {getServiceName(service.serviceId)} - {service.price}฿
+                          {service.commission > 0 && ` (抽成: ${service.commission}฿)`}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 text-xs">暂无服务项目</span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex space-x-2">

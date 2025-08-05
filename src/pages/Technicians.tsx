@@ -211,11 +211,12 @@ export default function TechniciansNew() {
 
       {/* 技师列表 */}
       <TechnicianList
-        technicians={technicians}
-        countries={countries}
+        technicians={technicians || []}
+        countries={countries || []}
+        serviceItems={serviceItems || []}
         onEdit={handleEdit}
         onCopy={handleCopy}
-        onDelete={handleSetDeletingTechnician}
+        onDelete={setDeletingTechnician}
       />
 
       {/* 添加/编辑模态框 */}

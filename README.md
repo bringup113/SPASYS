@@ -210,9 +210,10 @@ services:
     container_name: spa-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@spa.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
-      - "5050:80"
+      - "8080:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
@@ -569,7 +570,24 @@ interface OrderItem {
 - **后端API**: http://localhost:3001
 - **PostgreSQL**: localhost:5432
 - **Redis**: localhost:6379
-- **pgAdmin**: http://localhost:5050 (admin@spa.com / admin)
+- **pgAdmin**: http://localhost:8080 (admin@spa.com / admin123)
+
+### pgAdmin数据库管理
+
+pgAdmin是一个强大的PostgreSQL数据库管理工具，可以通过Web界面管理数据库：
+
+1. **访问pgAdmin**: 打开浏览器访问 http://localhost:8080
+2. **登录**: 使用邮箱 `admin@spa.com` 和密码 `admin123` 登录
+3. **添加服务器连接**:
+   - 右键点击 "Servers" → "Register" → "Server..."
+   - 在 "General" 标签页中，输入名称：`SPA Database`
+   - 在 "Connection" 标签页中，输入：
+     - Host: `postgres` (容器内连接)
+     - Port: `5432`
+     - Username: `postgres`
+     - Password: `password`
+     - Database: `spa_system`
+4. **管理数据库**: 连接后可以查看表结构、执行SQL查询、管理数据等
 
 ## 开发说明
 
