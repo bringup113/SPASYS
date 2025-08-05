@@ -359,21 +359,6 @@ export default function StatisticsReport() {
           </div>
         </div>
 
-        {/* 总利润 */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">总利润</p>
-              <p className={`text-2xl font-bold ${statisticsReport.totalProfit < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                {formatCurrency(statisticsReport.totalProfit, businessSettings)}
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* 技师总提成 */}
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center">
@@ -414,6 +399,21 @@ export default function StatisticsReport() {
               <p className="text-sm font-medium text-gray-600">公司总抽成</p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatCurrency(statisticsReport.totalCompanyCommission, businessSettings)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 总利润 */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center">
+            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-purple-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">总利润</p>
+              <p className={`text-2xl font-bold ${statisticsReport.totalProfit < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                {formatCurrency(statisticsReport.totalProfit, businessSettings)}
               </p>
             </div>
           </div>
@@ -466,13 +466,13 @@ export default function StatisticsReport() {
                         实收金额
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
-                        公司抽成
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
                         技师抽成
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
                         销售员抽成
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
+                        公司抽成
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
                         利润
@@ -497,13 +497,13 @@ export default function StatisticsReport() {
                           {formatCurrency(order.receivedAmount || 0, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(order.companyCommissionAmount || 0, businessSettings)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           {formatCurrency(order.totalTechnicianCommission, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           {formatCurrency(order.totalSalespersonCommission, businessSettings)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
+                          {formatCurrency(order.companyCommissionAmount || 0, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           <span className={(order.profit || 0) < 0 ? 'text-red-600' : 'text-green-600'}>
@@ -531,13 +531,13 @@ export default function StatisticsReport() {
                           {formatCurrency(profitStatsTotals.receivedAmount, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(profitStatsTotals.companyCommissionAmount, businessSettings)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           {formatCurrency(profitStatsTotals.totalTechnicianCommission, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           {formatCurrency(profitStatsTotals.totalSalespersonCommission, businessSettings)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
+                          {formatCurrency(profitStatsTotals.companyCommissionAmount, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
                           <span className={profitStatsTotals.totalProfit < 0 ? 'text-red-600' : 'text-green-600'}>
