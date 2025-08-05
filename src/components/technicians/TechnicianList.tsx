@@ -27,7 +27,6 @@ const TechnicianList = React.memo(function TechnicianList({
   onBatchUpdateCommissionRule
 }: TechnicianListProps) {
   const [selectedTechnicians, setSelectedTechnicians] = useState<Set<string>>(new Set());
-  const [showBatchActions, setShowBatchActions] = useState(false);
 
   // 缓存国家名称映射
   const countryNameMap = useMemo(() => {

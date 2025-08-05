@@ -26,11 +26,14 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
         // 检查API连接
         const response = await fetch(`${window.location.origin.replace(':5173', ':3001')}/api/health`);
         if (response.ok) {
-          setState((prev: ConnectionState) => ({ 
-            ...prev, 
-            isConnected: true, 
-            isLoading: false 
-          }));
+          // API健康检查成功，等待2秒确保服务器完全启动
+          setTimeout(() => {
+            setState((prev: ConnectionState) => ({ 
+              ...prev, 
+              isConnected: true, 
+              isLoading: false 
+            }));
+          }, 2000);
         } else {
           throw new Error('API连接失败');
         }
@@ -75,11 +78,14 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       // 检查API连接
       const response = await fetch(`${window.location.origin.replace(':5173', ':3001')}/api/health`);
       if (response.ok) {
-        setState((prev: ConnectionState) => ({ 
-          ...prev, 
-          isConnected: true, 
-          isLoading: false 
-        }));
+        // API健康检查成功，等待2秒确保服务器完全启动
+        setTimeout(() => {
+          setState((prev: ConnectionState) => ({ 
+            ...prev, 
+            isConnected: true, 
+            isLoading: false 
+          }));
+        }, 2000);
       } else {
         throw new Error('API连接失败');
       }
