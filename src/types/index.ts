@@ -57,6 +57,9 @@ export interface ServiceAssignment {
 // 订单状态类型
 export type OrderStatus = 'in_progress' | 'completed' | 'cancelled';
 
+// 交接班状态类型
+export type HandoverStatus = 'pending' | 'handed_over' | 'confirmed';
+
 // 订单项目类型
 export interface OrderItem {
   serviceId: string;
@@ -83,6 +86,7 @@ export interface Order {
   customerName?: string;
   customerPhone?: string;
   status: OrderStatus;
+  handoverStatus: HandoverStatus; // 交接班状态
   items: OrderItem[];
   totalAmount: number;
   receivedAmount?: number; // 实收金额
@@ -90,6 +94,7 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  handoverAt?: string; // 交接班时间
   notes?: string;
 }
 

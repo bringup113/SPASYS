@@ -5,8 +5,8 @@ import { useTechnicianContext } from '../context/TechnicianContext';
 import { useRoomContext } from '../context/RoomContext';
 import { useSettingsContext } from '../context/SettingsContext';
 import { useSalespersonContext } from '../context/SalespersonContext';
-import { Plus } from 'lucide-react';
-import { OrderStatus, OrderItem } from '../types';
+import { Plus, Users } from 'lucide-react';
+import { OrderStatus, OrderItem, HandoverStatus } from '../types';
 import { CommissionCalculator } from '../utils/commissionUtils';
 import Notification from '../components/Notification';
 import { 
@@ -14,7 +14,8 @@ import {
   StatsCards, 
   ServiceManagementModal, 
   TemporaryRoomModal, 
-  DeleteItemModal 
+  DeleteItemModal,
+  HandoverModal
 } from '../components/dashboard';
 
 export default function Dashboard() {
@@ -55,6 +56,9 @@ export default function Dashboard() {
   const [deletingItem, setDeletingItem] = useState<{ index: number; item: OrderItem } | null>(null);
   const [showDeleteItemModal, setShowDeleteItemModal] = useState(false);
   
+  // 交接班相关状态
+  const [showHandoverModal, setShowHandoverModal] = useState(false);
+  
   // 通知状态
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' | 'warning' });
   
@@ -70,6 +74,42 @@ export default function Dashboard() {
     setNotification({ show: true, message, type });
     setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 3000);
   };
+
+  // 获取待交接的订单
+  const getPendingHandoverOrders = useCallback(() => {
+    return orders?.filter(order => 
+      order.status === 'in_progress' && 
+      order.handoverStatus === 'pending'
+    ) || [];
+  }, [orders]);
+
+  // 处理交接班按钮点击
+  const handleHandoverClick = useCallback(() => {
+    const pendingOrders = getPendingHandoverOrders();
+    setShowHandoverModal(true);
+  }, [getPendingHandoverOrders]);
+
+  // 确认交接班
+  const handleConfirmHandover = useCallback(async () => {
+    try {
+      const pendingOrders = getPendingHandoverOrders();
+      
+      // 批量更新订单的交接班状态
+      for (const order of pendingOrders) {
+        await updateOrder(order.id, {
+          ...order,
+          handoverStatus: 'handed_over' as HandoverStatus,
+          handoverAt: new Date().toISOString()
+        });
+      }
+      
+      showNotification(`成功交接 ${pendingOrders.length} 个订单`, 'success');
+      setShowHandoverModal(false);
+    } catch (error) {
+      console.error('交接班失败:', error);
+      showNotification('交接班失败，请重试', 'error');
+    }
+  }, [getPendingHandoverOrders, updateOrder, showNotification]);
 
   // 检查并删除过期的临时房间
   const checkExpiredRooms = useCallback(() => {
@@ -467,18 +507,32 @@ export default function Dashboard() {
         onClose={() => setNotification({ show: false, message: '', type: 'success' })}
       />
 
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">桌台管理</h1>
-          <p className="mt-2 text-gray-600">SPA房间状态和订单管理</p>
+          <h1 className="text-3xl font-bold text-gray-900">SPA管理系统</h1>
+          <p className="mt-2 text-gray-600">实时监控房间状态和订单管理</p>
         </div>
-        <button
-          onClick={() => setShowTemporaryRoomModal(true)}
-          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center shadow-lg"
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          新建临时房
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={handleHandoverClick}
+            className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center shadow-lg"
+          >
+            <Users className="h-5 w-5 mr-2" />
+            交接班
+            {getPendingHandoverOrders().length > 0 && (
+              <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                {getPendingHandoverOrders().length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setShowTemporaryRoomModal(true)}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center shadow-lg"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            新建临时房
+          </button>
+        </div>
       </div>
 
       {/* 统计卡片 */}
@@ -567,6 +621,14 @@ export default function Dashboard() {
         currentOrder={currentOrder}
         businessSettings={businessSettings}
         getServiceName={getServiceName}
+      />
+
+      {/* 交接班确认模态框 */}
+      <HandoverModal
+        show={showHandoverModal}
+        onClose={() => setShowHandoverModal(false)}
+        onConfirmHandover={handleConfirmHandover}
+        pendingOrders={getPendingHandoverOrders()}
       />
     </div>
   );

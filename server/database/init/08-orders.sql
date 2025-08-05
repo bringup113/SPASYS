@@ -9,12 +9,14 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_name VARCHAR(100),                    -- 客户姓名，用于识别和联系
   customer_phone VARCHAR(20),                    -- 客户联系电话，用于后续服务和回访
   status VARCHAR(20) NOT NULL DEFAULT 'in_progress' CHECK (status IN ('in_progress', 'completed', 'cancelled')), -- 订单状态：in_progress(进行中)、completed(已完成)、cancelled(已取消)
+  handover_status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (handover_status IN ('pending', 'handed_over', 'confirmed')), -- 交接班状态：pending(待交接)、handed_over(已交接)、confirmed(已确认)
   total_amount DECIMAL(10,2) NOT NULL DEFAULT 0, -- 订单总金额（消费金额），所有服务项目的价格总和
   received_amount DECIMAL(10,2),                 -- 实际收款金额，可能因折扣而小于total_amount
   discount_rate DECIMAL(5,4) DEFAULT 1.0000,    -- 折扣率（实收金额/消费金额），1.0表示无折扣，0.8表示8折
   created_at TIMESTAMP DEFAULT NOW(),            -- 订单创建时间，用于统计和报表
   updated_at TIMESTAMP DEFAULT NOW(),            -- 记录最后更新时间，用于数据同步
   completed_at TIMESTAMP,                        -- 订单完成时间，用于统计技师工作时间和客户满意度
+  handover_at TIMESTAMP,                         -- 交接班时间，记录交接班操作的时间
   notes TEXT,                                    -- 订单备注信息，如特殊要求、客户反馈、服务记录等
   FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL -- 外键约束，房间删除时设为NULL
 );

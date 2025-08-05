@@ -37,6 +37,7 @@ router.get('/orders', async (req, res) => {
       customerName: row.customer_name,
       customerPhone: row.customer_phone,
       status: row.status,
+      handoverStatus: row.handover_status,
       items: row.items || [],
       totalAmount: parseFloat(row.total_amount),
       receivedAmount: row.received_amount ? parseFloat(row.received_amount) : undefined,
@@ -44,6 +45,7 @@ router.get('/orders', async (req, res) => {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       completedAt: row.completed_at,
+      handoverAt: row.handover_at,
       notes: row.notes
     }));
     
@@ -97,12 +99,14 @@ router.get('/orders/:id', async (req, res) => {
       customerName: order.customer_name,
       customerPhone: order.customer_phone,
       status: order.status,
+      handoverStatus: order.handover_status,
       items: order.items || [],
       totalAmount: parseFloat(order.total_amount),
       receivedAmount: order.received_amount ? parseFloat(order.received_amount) : undefined,
       createdAt: order.created_at,
       updatedAt: order.updated_at,
       completedAt: order.completed_at,
+      handoverAt: order.handover_at,
       notes: order.notes
     });
   } catch (error) {
@@ -154,15 +158,15 @@ router.post('/orders', async (req, res) => {
     try {
       await client.query('BEGIN');
       
-      // 创建订单（结账时才有折扣率，创建时默认为1.0）
+      // 创建订单（结账时才有折扣率，创建时默认为1.0，交接班状态默认为pending）
       await client.query(`
         INSERT INTO orders (
           id, room_id, room_name, customer_name, customer_phone, 
-          total_amount, received_amount, discount_rate, notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          total_amount, received_amount, discount_rate, handover_status, notes
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       `, [
         orderId, roomId, roomName, customerName, customerPhone,
-        totalAmount, receivedAmount, 1.0, notes
+        totalAmount, receivedAmount, 1.0, 'pending', notes
       ]);
       
       // 创建订单项目（结账时才计算销售员提成）
@@ -254,6 +258,8 @@ router.put('/orders/:id', async (req, res) => {
       customerName,
       customerPhone,
       status,
+      handoverStatus,
+      handoverAt,
       totalAmount,
       receivedAmount,
       items,
@@ -290,6 +296,14 @@ router.put('/orders/:id', async (req, res) => {
       if (status !== undefined) {
         updateFields.push(`status = $${paramIndex++}`);
         values.push(status);
+      }
+      if (handoverStatus !== undefined) {
+        updateFields.push(`handover_status = $${paramIndex++}`);
+        values.push(handoverStatus);
+      }
+      if (handoverAt !== undefined) {
+        updateFields.push(`handover_at = $${paramIndex++}`);
+        values.push(handoverAt);
       }
       if (totalAmount !== undefined) {
         updateFields.push(`total_amount = $${paramIndex++}`);
@@ -380,12 +394,14 @@ router.put('/orders/:id', async (req, res) => {
         customerName: order.customer_name,
         customerPhone: order.customer_phone,
         status: order.status,
+        handoverStatus: order.handover_status,
         items: order.items || [],
         totalAmount: parseFloat(order.total_amount),
         receivedAmount: order.received_amount ? parseFloat(order.received_amount) : undefined,
         createdAt: order.created_at,
         updatedAt: order.updated_at,
         completedAt: order.completed_at,
+        handoverAt: order.handover_at,
         notes: order.notes
       };
       
@@ -462,6 +478,7 @@ router.patch('/orders/:id/status', async (req, res) => {
       customerName: order.customer_name,
       customerPhone: order.customer_phone,
       status: order.status,
+      handoverStatus: order.handover_status,
       items: order.items || [],
       totalAmount: parseFloat(order.total_amount),
       receivedAmount: order.received_amount ? parseFloat(order.received_amount) : undefined,
