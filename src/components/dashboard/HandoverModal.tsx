@@ -46,7 +46,7 @@ const HandoverModal = React.memo(function HandoverModal({
                   交接班确认
                 </h3>
                 <p className="text-orange-100 text-sm mt-1">
-                  请确认以下未交接的订单信息
+                  请确认以下{pendingOrders.length} 个未交接的订单信息
                 </p>
               </div>
             </div>
