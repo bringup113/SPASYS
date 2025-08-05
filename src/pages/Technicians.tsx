@@ -214,6 +214,7 @@ export default function TechniciansNew() {
         technicians={technicians || []}
         countries={countries || []}
         serviceItems={serviceItems || []}
+        companyCommissionRules={companyCommissionRules || []}
         onEdit={handleEdit}
         onCopy={handleCopy}
         onDelete={handleSetDeletingTechnician}
