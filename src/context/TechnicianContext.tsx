@@ -4,7 +4,7 @@ import { technicianAPI } from '../services/api';
 import { websocketService } from '../services/websocket';
 
 interface TechnicianContextType extends TechnicianState {
-  addTechnician: (technician: Omit<Technician, 'id'>) => void;
+  addTechnician: (technician: Omit<Technician, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTechnician: (id: string, technician: Partial<Technician>) => void;
   deleteTechnician: (id: string) => void;
   updateTechnicianStatus: (id: string, status: TechnicianStatus) => void;
@@ -46,18 +46,42 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
     const handleDataUpdate = (data: any) => {
       switch (data.type) {
         case 'technician-created':
-          setState((prev: TechnicianState) => ({
-            ...prev,
-            technicians: [...prev.technicians, data.data].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-          }));
+          setState((prev: TechnicianState) => {
+            const newTechnicians = [...prev.technicians, data.data];
+            // 按国家名称和创建时间排序
+            return {
+              ...prev,
+              technicians: newTechnicians.sort((a, b) => {
+                // 首先按国家名称排序
+                const countryComparison = (a.countryName || '').localeCompare(b.countryName || '');
+                if (countryComparison !== 0) {
+                  return countryComparison;
+                }
+                // 如果国家相同，按创建时间排序（旧的在前）
+                return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+              })
+            };
+          });
           break;
         case 'technician-updated':
-          setState((prev: TechnicianState) => ({
-            ...prev,
-            technicians: prev.technicians.map((technician: Technician) => 
+          setState((prev: TechnicianState) => {
+            const updatedTechnicians = prev.technicians.map((technician: Technician) => 
               technician.id === data.data.id ? data.data : technician
-            ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-          }));
+            );
+            // 按国家名称和创建时间排序
+            return {
+              ...prev,
+              technicians: updatedTechnicians.sort((a, b) => {
+                // 首先按国家名称排序
+                const countryComparison = (a.countryName || '').localeCompare(b.countryName || '');
+                if (countryComparison !== 0) {
+                  return countryComparison;
+                }
+                // 如果国家相同，按创建时间排序（旧的在前）
+                return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+              })
+            };
+          });
           break;
         case 'technician-deleted':
           setState((prev: TechnicianState) => ({
@@ -66,12 +90,24 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
           }));
           break;
         case 'technician-status-updated':
-          setState((prev: TechnicianState) => ({
-            ...prev,
-            technicians: prev.technicians.map((technician: Technician) => 
+          setState((prev: TechnicianState) => {
+            const updatedTechnicians = prev.technicians.map((technician: Technician) => 
               technician.id === data.data.id ? data.data : technician
-            ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-          }));
+            );
+            // 按国家名称和创建时间排序
+            return {
+              ...prev,
+              technicians: updatedTechnicians.sort((a, b) => {
+                // 首先按国家名称排序
+                const countryComparison = (a.countryName || '').localeCompare(b.countryName || '');
+                if (countryComparison !== 0) {
+                  return countryComparison;
+                }
+                // 如果国家相同，按创建时间排序（旧的在前）
+                return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+              })
+            };
+          });
           break;
       }
     };
@@ -83,13 +119,25 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const addTechnician = useCallback(async (technician: Omit<Technician, 'id'>) => {
+  const addTechnician = useCallback(async (technician: Omit<Technician, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       const createdTechnician = await technicianAPI.create(technician);
-      setState((prev: TechnicianState) => ({
-        ...prev,
-        technicians: [...prev.technicians, createdTechnician]
-      }));
+      setState((prev: TechnicianState) => {
+        const newTechnicians = [...prev.technicians, createdTechnician];
+        // 按国家名称和创建时间排序
+        return {
+          ...prev,
+          technicians: newTechnicians.sort((a, b) => {
+            // 首先按国家名称排序
+            const countryComparison = (a.countryName || '').localeCompare(b.countryName || '');
+            if (countryComparison !== 0) {
+              return countryComparison;
+            }
+            // 如果国家相同，按创建时间排序（旧的在前）
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          })
+        };
+      });
     } catch (error) {
       console.error('❌ 创建技师失败:', error);
     }
@@ -98,12 +146,24 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
   const updateTechnician = useCallback(async (id: string, technician: Partial<Technician>) => {
     try {
       const updatedTechnician = await technicianAPI.update(id, technician);
-      setState((prev: TechnicianState) => ({
-        ...prev,
-        technicians: prev.technicians.map((tech: Technician) => 
+      setState((prev: TechnicianState) => {
+        const updatedTechnicians = prev.technicians.map((tech: Technician) => 
           tech.id === id ? updatedTechnician : tech
-        )
-      }));
+        );
+        // 按国家名称和创建时间排序
+        return {
+          ...prev,
+          technicians: updatedTechnicians.sort((a, b) => {
+            // 首先按国家名称排序
+            const countryComparison = (a.countryName || '').localeCompare(b.countryName || '');
+            if (countryComparison !== 0) {
+              return countryComparison;
+            }
+            // 如果国家相同，按创建时间排序（旧的在前）
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          })
+        };
+      });
     } catch (error) {
       console.error('❌ 更新技师失败:', error);
       throw error;
@@ -126,12 +186,24 @@ export function TechnicianProvider({ children }: { children: ReactNode }) {
   const updateTechnicianStatus = useCallback(async (id: string, status: TechnicianStatus) => {
     try {
       const updatedTechnician = await technicianAPI.updateStatus(id, status);
-      setState((prev: TechnicianState) => ({
-        ...prev,
-        technicians: prev.technicians.map((tech: Technician) => 
+      setState((prev: TechnicianState) => {
+        const updatedTechnicians = prev.technicians.map((tech: Technician) => 
           tech.id === id ? updatedTechnician : tech
-        )
-      }));
+        );
+        // 按国家名称和创建时间排序
+        return {
+          ...prev,
+          technicians: updatedTechnicians.sort((a, b) => {
+            // 首先按国家名称排序
+            const countryComparison = (a.countryName || '').localeCompare(b.countryName || '');
+            if (countryComparison !== 0) {
+              return countryComparison;
+            }
+            // 如果国家相同，按创建时间排序（旧的在前）
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          })
+        };
+      });
     } catch (error) {
       console.error('❌ 更新技师状态失败:', error);
       throw error;

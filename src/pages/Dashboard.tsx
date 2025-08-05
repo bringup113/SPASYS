@@ -36,7 +36,8 @@ export default function Dashboard() {
     updateTechnicianStatus
   } = useTechnicianContext();
   const { 
-    serviceItems 
+    serviceItems,
+    serviceCategories
   } = useServiceContext();
   const { 
     businessSettings,
@@ -577,6 +578,7 @@ export default function Dashboard() {
         currentOrder={currentOrder}
         setCurrentOrder={setCurrentOrder}
         serviceItems={serviceItems || []}
+        serviceCategories={serviceCategories || []}
         technicians={technicians || []}
         salespeople={salespeople || []}
         businessSettings={businessSettings}

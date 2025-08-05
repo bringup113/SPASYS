@@ -126,12 +126,22 @@ const TechnicianList = React.memo(function TechnicianList({
 
   // 缓存表格行数据
   const tableRows = useMemo(() => {
-    return technicians.map((technician) => ({
-      ...technician,
-      countryName: getCountryName(technician.countryId),
-      statusColor: getStatusColor(technician.status),
-      statusText: getStatusText(technician.status)
-    }));
+    return technicians
+      .map((technician) => ({
+        ...technician,
+        countryName: getCountryName(technician.countryId),
+        statusColor: getStatusColor(technician.status),
+        statusText: getStatusText(technician.status)
+      }))
+      .sort((a, b) => {
+        // 首先按国家名称排序
+        const countryComparison = a.countryName.localeCompare(b.countryName);
+        if (countryComparison !== 0) {
+          return countryComparison;
+        }
+        // 如果国家相同，按创建时间排序（旧的在前）
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
   }, [technicians, countryNameMap]);
 
   const isAllSelected = technicians.length > 0 && selectedTechnicians.size === technicians.length;

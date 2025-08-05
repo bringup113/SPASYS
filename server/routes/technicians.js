@@ -25,10 +25,11 @@ router.get('/technicians', async (req, res) => {
                '[]'::json
              ) as services
       FROM technicians t
+      LEFT JOIN countries c ON t.country_id = c.id
       LEFT JOIN technician_services ts ON t.id = ts.technician_id
       LEFT JOIN company_commission_rules ccr ON ts.company_commission_rule_id = ccr.id
-      GROUP BY t.id
-      ORDER BY t.created_at ASC
+      GROUP BY t.id, c.name
+      ORDER BY c.name ASC, t.created_at ASC
     `);
     
     const technicians = result.rows.map(row => ({
@@ -37,7 +38,9 @@ router.get('/technicians', async (req, res) => {
       countryId: row.country_id,
       hireDate: row.hire_date.toISOString().split('T')[0],
       status: row.status,
-      services: row.services || []
+      services: row.services || [],
+      createdAt: row.created_at.toISOString(),
+      updatedAt: row.updated_at.toISOString()
     }));
     
     res.json(technicians);
@@ -73,10 +76,11 @@ router.get('/technicians/:id', async (req, res) => {
                '[]'::json
              ) as services
       FROM technicians t
+      LEFT JOIN countries c ON t.country_id = c.id
       LEFT JOIN technician_services ts ON t.id = ts.technician_id
       LEFT JOIN company_commission_rules ccr ON ts.company_commission_rule_id = ccr.id
       WHERE t.id = $1
-      GROUP BY t.id
+      GROUP BY t.id, c.name
     `, [id]);
     
     if (result.rows.length === 0) {
@@ -90,7 +94,9 @@ router.get('/technicians/:id', async (req, res) => {
       countryId: technician.country_id,
       hireDate: technician.hire_date.toISOString().split('T')[0],
       status: technician.status,
-      services: technician.services || []
+      services: technician.services || [],
+      createdAt: technician.created_at.toISOString(),
+      updatedAt: technician.updated_at.toISOString()
     });
   } catch (error) {
     console.error('获取技师详情失败:', error);

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import { 
   XCircle, 
   Package, 
@@ -17,6 +17,7 @@ interface ServiceManagementModalProps {
   currentOrder: any;
   setCurrentOrder: (order: any) => void;
   serviceItems: any[];
+  serviceCategories: any[];
   technicians: any[];
   salespeople: any[];
   businessSettings: any;
@@ -50,6 +51,7 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
   currentOrder,
   setCurrentOrder,
   serviceItems,
+  serviceCategories,
   technicians,
   salespeople,
   businessSettings,
@@ -75,7 +77,16 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
   setIsCheckoutMode
 }: ServiceManagementModalProps) {
 
+  // 分类选择状态
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
+  // 根据选择的分类过滤服务项目
+  const filteredServiceItems = useMemo(() => {
+    if (selectedCategory === 'all') {
+      return serviceItems;
+    }
+    return serviceItems?.filter(service => service.categoryId === selectedCategory) || [];
+  }, [serviceItems, selectedCategory]);
 
   // 处理技师选择
   const handleTechnicianSelect = useCallback(async (technician: any) => {
@@ -381,8 +392,38 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
                     <label className="block text-sm font-medium text-gray-700 mb-4">
                       选择服务项目
                     </label>
+                    
+                    {/* 分类选择 */}
+                    <div className="mb-4">
+                      <div className="grid grid-cols-5 gap-2">
+                        <button
+                          onClick={() => setSelectedCategory('all')}
+                          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                            selectedCategory === 'all'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          全部
+                        </button>
+                        {serviceCategories?.slice(0, 4).map((category) => (
+                          <button
+                            key={category.id}
+                            onClick={() => setSelectedCategory(category.id)}
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                              selectedCategory === category.id
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            {category.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
                     <div className="grid grid-cols-2 gap-3">
-                      {serviceItems?.map((service) => {
+                      {filteredServiceItems?.map((service) => {
                         // 计算该服务有多少个可用技师
                         const availableTechnicians = technicians?.filter(tech => 
                           tech.status === 'available' && 

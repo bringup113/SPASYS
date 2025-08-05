@@ -110,7 +110,7 @@ export const serviceItemAPI = {
 // 技师相关API
 export const technicianAPI = {
   getAll: () => apiRequest<Technician[]>('/technicians'),
-  create: (technician: Omit<Technician, 'id'>) => apiRequest<Technician>('/technicians', {
+  create: (technician: Omit<Technician, 'id' | 'createdAt' | 'updatedAt'>) => apiRequest<Technician>('/technicians', {
     method: 'POST',
     body: JSON.stringify(technician),
   }),

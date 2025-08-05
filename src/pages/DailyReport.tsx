@@ -232,9 +232,17 @@ export default function StatisticsReport() {
     setCurrentPage(prev => Math.min(statisticsReport.pagination.totalPages, prev + 1));
   }, [statisticsReport.pagination.totalPages]);
 
-  // 优化重复的计算
+  // 优化重复的计算 - 使用所有筛选后的数据进行汇总，而不是当前页面的数据
   const profitStatsTotals = useMemo(() => {
-    if (statisticsReport.pagination.totalItems === 0) {
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const periodOrders = orders?.filter(order => {
+      const orderBusinessDate = getBusinessDateStringForTime(new Date(order.createdAt), businessSettings);
+      return orderBusinessDate >= startDate && orderBusinessDate <= endDate && order.status === 'completed';
+    }) || [];
+
+    if (periodOrders.length === 0) {
       return {
         totalAmount: 0,
         receivedAmount: 0,
@@ -245,15 +253,33 @@ export default function StatisticsReport() {
       };
     }
     
-    return {
-      totalAmount: statisticsReport.profitStats.reduce((sum, order) => sum + order.totalAmount, 0),
-      receivedAmount: statisticsReport.profitStats.reduce((sum, order) => sum + (order.receivedAmount || 0), 0),
-      companyCommissionAmount: statisticsReport.profitStats.reduce((sum, order) => sum + order.companyCommissionAmount, 0),
-      totalTechnicianCommission: statisticsReport.profitStats.reduce((sum, order) => sum + order.totalTechnicianCommission, 0),
-      totalSalespersonCommission: statisticsReport.profitStats.reduce((sum, order) => sum + order.totalSalespersonCommission, 0),
-      totalProfit: statisticsReport.profitStats.reduce((sum, order) => sum + (order.profit || 0), 0)
-    };
-  }, [statisticsReport.profitStats, statisticsReport.pagination.totalItems]);
+    // 计算所有筛选后订单的汇总数据
+    const allOrdersTotals = periodOrders.reduce((totals, order) => {
+      const totalTechnicianCommission = order.items.reduce((sum, item) => sum + item.technicianCommission, 0);
+      const totalSalespersonCommission = order.items.reduce((sum, item) => sum + (item.salespersonCommission || 0), 0);
+      const companyCommissionAmount = order.items.reduce((sum, item) => sum + (item.companyCommissionAmount || 0), 0);
+      const receivedAmount = order.receivedAmount || 0;
+      const profit = receivedAmount - companyCommissionAmount - totalTechnicianCommission - totalSalespersonCommission;
+      
+      return {
+        totalAmount: totals.totalAmount + order.totalAmount,
+        receivedAmount: totals.receivedAmount + receivedAmount,
+        companyCommissionAmount: totals.companyCommissionAmount + companyCommissionAmount,
+        totalTechnicianCommission: totals.totalTechnicianCommission + totalTechnicianCommission,
+        totalSalespersonCommission: totals.totalSalespersonCommission + totalSalespersonCommission,
+        totalProfit: totals.totalProfit + profit
+      };
+    }, {
+      totalAmount: 0,
+      receivedAmount: 0,
+      companyCommissionAmount: 0,
+      totalTechnicianCommission: 0,
+      totalSalespersonCommission: 0,
+      totalProfit: 0
+    });
+    
+    return allOrdersTotals;
+  }, [startDate, endDate, orders, businessSettings]);
 
   const technicianStatsTotals = useMemo(() => {
     return {

@@ -30,6 +30,8 @@ export interface Technician {
   hireDate: string;
   status: TechnicianStatus; // 新增：技师状态
   services: ServiceAssignment[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 // 服务分类类型
