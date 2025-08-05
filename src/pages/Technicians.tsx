@@ -216,7 +216,7 @@ export default function TechniciansNew() {
         serviceItems={serviceItems || []}
         onEdit={handleEdit}
         onCopy={handleCopy}
-        onDelete={setDeletingTechnician}
+        onDelete={handleSetDeletingTechnician}
       />
 
       {/* 添加/编辑模态框 */}

@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { Technician } from '../../types';
-import { Edit, Copy, Trash2 } from 'lucide-react';
 
 interface TechnicianListProps {
   technicians: Technician[];
