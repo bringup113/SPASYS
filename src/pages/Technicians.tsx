@@ -3,7 +3,7 @@ import { useTechnicianContext } from '../context/TechnicianContext';
 import { useServiceContext } from '../context/ServiceContext';
 import { useSettingsContext } from '../context/SettingsContext';
 import { useOrderContext } from '../context/OrderContext';
-import { Technician, ServiceAssignment } from '../types';
+import { Technician, ServiceAssignment, TechnicianStatus } from '../types';
 import { Plus } from 'lucide-react';
 import Notification from '../components/Notification';
 import {
@@ -185,6 +185,70 @@ export default function TechniciansNew() {
     setDeletingTechnician(null);
   }, []);
 
+  // 批量删除技师
+  const handleBatchDelete = useCallback(async (technicianIds: string[]) => {
+    if (!window.confirm(`确定要删除选中的 ${technicianIds.length} 个技师吗？此操作不可恢复。`)) {
+      return;
+    }
+
+    try {
+      // 这里需要调用后端的批量删除API
+      // 暂时使用循环删除单个技师的方式
+      for (const id of technicianIds) {
+        await deleteTechnician(id);
+      }
+      showNotification(`成功删除 ${technicianIds.length} 个技师`, 'success');
+    } catch (error: any) {
+      console.error('批量删除技师失败:', error);
+      showNotification('批量删除技师失败，请重试', 'error');
+    }
+  }, [deleteTechnician, showNotification]);
+
+  // 批量修改技师状态
+  const handleBatchUpdateStatus = useCallback(async (technicianIds: string[], status: string) => {
+    if (!status) return;
+
+    try {
+      // 这里需要调用后端的批量更新API
+      // 暂时使用循环更新单个技师的方式
+      for (const id of technicianIds) {
+        const technician = technicians?.find(t => t.id === id);
+        if (technician) {
+          await updateTechnician(id, { ...technician, status: status as TechnicianStatus });
+        }
+      }
+      showNotification(`成功更新 ${technicianIds.length} 个技师状态`, 'success');
+    } catch (error: any) {
+      console.error('批量更新技师状态失败:', error);
+      showNotification('批量更新技师状态失败，请重试', 'error');
+    }
+  }, [technicians, updateTechnician, showNotification]);
+
+  // 批量修改技师分成方案
+  const handleBatchUpdateCommissionRule = useCallback(async (technicianIds: string[], ruleId: string) => {
+    if (!ruleId) return;
+
+    try {
+      // 这里需要调用后端的批量更新API
+      // 暂时使用循环更新单个技师的方式
+      for (const id of technicianIds) {
+        const technician = technicians?.find(t => t.id === id);
+        if (technician) {
+          // 更新所有服务项目的分成方案
+          const updatedServices = technician.services.map(service => ({
+            ...service,
+            companyCommissionRuleId: ruleId
+          }));
+          await updateTechnician(id, { ...technician, services: updatedServices });
+        }
+      }
+      showNotification(`成功更新 ${technicianIds.length} 个技师的分成方案`, 'success');
+    } catch (error: any) {
+      console.error('批量更新技师分成方案失败:', error);
+      showNotification('批量更新技师分成方案失败，请重试', 'error');
+    }
+  }, [technicians, updateTechnician, showNotification]);
+
   return (
     <div className="space-y-6">
       <Notification
@@ -218,6 +282,9 @@ export default function TechniciansNew() {
         onEdit={handleEdit}
         onCopy={handleCopy}
         onDelete={handleSetDeletingTechnician}
+        onBatchDelete={handleBatchDelete}
+        onBatchUpdateStatus={handleBatchUpdateStatus}
+        onBatchUpdateCommissionRule={handleBatchUpdateCommissionRule}
       />
 
       {/* 添加/编辑模态框 */}
