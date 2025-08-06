@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { 
   Home, 
   Users, 
@@ -11,7 +12,8 @@ import {
   MapPin,
   Shield,
   FileText,
-  ChevronDown
+  ChevronDown,
+  LogOut
 } from 'lucide-react';
 
 const menuItems = [
@@ -30,12 +32,14 @@ const menuItems = [
       { path: '/service-items', icon: FileText, label: '服务项目' },
       { path: '/salespeople', icon: Users, label: '销售员管理' },
       { path: '/settings', icon: Settings, label: '基础设置' },
-      { path: '/company-commission-rules', icon: Shield, label: '公司分成设置' }
+      { path: '/company-commission-rules', icon: Shield, label: '公司分成设置' },
+      { path: '/logout', icon: LogOut, label: '退出登录', action: 'logout' }
     ]
   }
 ];
 
 export default function Sidebar() {
+  const { user, logout } = useAuth();
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
   const toggleMenu = useCallback((path: string) => {
@@ -67,18 +71,30 @@ export default function Sidebar() {
             />
           </button>
         ) : (
-          // 没有子菜单的项目使用NavLink进行导航
-          <NavLink
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 transition-colors ${
-                isActive ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600' : ''
-              } ${level > 0 ? 'pl-12' : ''}`
-            }
-          >
-            <item.icon className="w-5 h-5 mr-3" />
-            {item.label}
-          </NavLink>
+          // 没有子菜单的项目使用NavLink进行导航，或者处理特殊操作
+          item.action === 'logout' ? (
+            <button
+              onClick={logout}
+              className={`flex items-center w-full px-6 py-3 text-gray-700 hover:bg-gray-100 transition-colors ${
+                level > 0 ? 'pl-12' : ''
+              }`}
+            >
+              <item.icon className="w-5 h-5 mr-3" />
+              {item.label}
+            </button>
+          ) : (
+            <NavLink
+              to={item.path}
+              className={({ isActive }) =>
+                `flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 transition-colors ${
+                  isActive ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600' : ''
+                } ${level > 0 ? 'pl-12' : ''}`
+              }
+            >
+              <item.icon className="w-5 h-5 mr-3" />
+              {item.label}
+            </NavLink>
+          )
         )}
         
         {hasChildren && isExpanded && (
@@ -91,11 +107,16 @@ export default function Sidebar() {
   }, [expandedMenus, toggleMenu]);
 
   return (
-    <div className="w-64 bg-white shadow-lg">
+    <div className="w-64 bg-white shadow-lg flex flex-col h-full">
       <div className="p-6">
         <h1 className="text-2xl font-bold text-gray-800">SPA管理系统</h1>
+        {user && (
+          <p className="text-sm text-gray-600 mt-2">
+            欢迎，{user.name}
+          </p>
+        )}
       </div>
-      <nav className="mt-6">
+      <nav className="mt-6 flex-1">
         {menuItems.map((item) => renderMenuItem(item))}
       </nav>
     </div>

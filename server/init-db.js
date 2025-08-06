@@ -24,7 +24,8 @@ async function initDatabase() {
       '07-technicians.sql',
       '08-orders.sql',
       '09-countries.sql',
-      '11-default-data.sql'
+      '11-default-data.sql',
+      '12-users.sql'
     ];
 
     for (const file of sqlFiles) {

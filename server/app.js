@@ -60,6 +60,7 @@ global.pool = pool;
 global.redisClient = redisClient;
 
 // 导入路由模块
+const authRouter = require('./routes/auth');
 const roomsRouter = require('./routes/rooms');
 const servicesRouter = require('./routes/services');
 const techniciansRouter = require('./routes/technicians');
@@ -67,6 +68,7 @@ const ordersRouter = require('./routes/orders');
 const managementRouter = require('./routes/management');
 
 // 注册路由
+app.use('/api/auth', authRouter);
 app.use('/api', roomsRouter);
 app.use('/api', servicesRouter);
 app.use('/api', techniciansRouter);
