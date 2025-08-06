@@ -99,12 +99,14 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_name VARCHAR(100),                    -- 客户姓名
   customer_phone VARCHAR(20),                    -- 客户联系电话
   status VARCHAR(20) NOT NULL DEFAULT 'in_progress', -- 订单状态：in_progress(进行中)、completed(已完成)、cancelled(已取消)
+  handover_status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (handover_status IN ('pending', 'handed_over', 'confirmed')), -- 交接班状态：pending(待交接)、handed_over(已交接)、confirmed(已确认)
   total_amount DECIMAL(10,2) NOT NULL DEFAULT 0, -- 订单总金额（消费金额）
   received_amount DECIMAL(10,2),                 -- 实际收款金额，可能因折扣而小于total_amount
   discount_rate DECIMAL(5,4) DEFAULT 1.0000,    -- 折扣率（实收金额/消费金额），1.0表示无折扣，0.8表示8折
   created_at TIMESTAMP DEFAULT NOW(),            -- 订单创建时间
   updated_at TIMESTAMP DEFAULT NOW(),            -- 记录最后更新时间
   completed_at TIMESTAMP,                        -- 订单完成时间，用于统计和报表
+  handover_at TIMESTAMP,                         -- 交接班时间，记录交接班操作的时间
   notes TEXT,                                    -- 订单备注信息，如特殊要求、客户反馈等
   FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
 );
@@ -155,4 +157,13 @@ CREATE TRIGGER update_company_commission_rules_updated_at BEFORE UPDATE ON compa
 CREATE TRIGGER update_technicians_updated_at BEFORE UPDATE ON technicians FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER update_technician_services_updated_at BEFORE UPDATE ON technician_services FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER update_order_items_updated_at BEFORE UPDATE ON order_items FOR EACH ROW EXECUTE FUNCTION update_updated_at(); 
+CREATE TRIGGER update_order_items_updated_at BEFORE UPDATE ON order_items FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- 创建订单相关索引
+CREATE INDEX IF NOT EXISTS idx_orders_room_id ON orders(room_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_handover_status ON orders(handover_status);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_service_id ON order_items(service_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_technician_id ON order_items(technician_id); 

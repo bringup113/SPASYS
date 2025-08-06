@@ -162,11 +162,11 @@ router.post('/orders', async (req, res) => {
       await client.query(`
         INSERT INTO orders (
           id, room_id, room_name, customer_name, customer_phone, 
-          total_amount, received_amount, discount_rate, handover_status, notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          status, total_amount, received_amount, discount_rate, handover_status, notes
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       `, [
         orderId, roomId, roomName, customerName, customerPhone,
-        totalAmount, receivedAmount, 1.0, 'pending', notes
+        'in_progress', totalAmount, receivedAmount, 1.0, 'pending', notes
       ]);
       
       // 创建订单项目（结账时才计算销售员提成）
@@ -223,12 +223,14 @@ router.post('/orders', async (req, res) => {
         customerName: order.customer_name,
         customerPhone: order.customer_phone,
         status: order.status,
+        handoverStatus: order.handover_status,
         items: order.items || [],
         totalAmount: parseFloat(order.total_amount),
         receivedAmount: order.received_amount ? parseFloat(order.received_amount) : undefined,
         createdAt: order.created_at,
         updatedAt: order.updated_at,
         completedAt: order.completed_at,
+        handoverAt: order.handover_at,
         notes: order.notes
       };
       
@@ -649,16 +651,159 @@ router.delete('/orders/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    const result = await global.pool.query('DELETE FROM orders WHERE id = $1 RETURNING *', [id]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: '订单不存在' });
+    // 开始事务
+    const client = await global.pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // 1. 获取订单信息，包括房间ID和技师信息
+      const orderResult = await client.query(`
+        SELECT o.*, 
+               json_agg(
+                 json_build_object(
+                   'technicianId', oi.technician_id
+                 ) ORDER BY oi.id
+               ) as items
+        FROM orders o
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.id = $1
+        GROUP BY o.id
+      `, [id]);
+      
+      if (orderResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: '订单不存在' });
+      }
+      
+      const order = orderResult.rows[0];
+      const roomId = order.room_id;
+      const items = order.items || [];
+      
+      // 2. 释放技师资源（将技师状态设为available）
+      const technicianIds = items
+        .map(item => item.technicianId)
+        .filter(id => id) // 过滤掉null值
+        .filter((id, index, arr) => arr.indexOf(id) === index); // 去重
+      
+      for (const technicianId of technicianIds) {
+        // 检查该技师是否还有其他进行中的订单
+        const otherOrdersResult = await client.query(`
+          SELECT COUNT(*) as count 
+          FROM orders o 
+          JOIN order_items oi ON o.id = oi.order_id 
+          WHERE oi.technician_id = $1 
+          AND o.id != $2 
+          AND o.status = 'in_progress'
+        `, [technicianId, id]);
+        
+        const otherOrdersCount = parseInt(otherOrdersResult.rows[0].count);
+        
+        // 如果没有其他进行中的订单，则将技师状态设为available
+        if (otherOrdersCount === 0) {
+          await client.query(
+            'UPDATE technicians SET status = $1 WHERE id = $2',
+            ['available', technicianId]
+          );
+          
+                      // 广播技师状态更新
+            const technicianResult = await client.query(`
+              SELECT t.*, 
+                     COALESCE(
+                       json_agg(
+                         CASE 
+                           WHEN ts.service_id IS NOT NULL THEN
+                             json_build_object(
+                               'serviceId', ts.service_id,
+                               'price', ts.price,
+                               'commission', ts.commission,
+                               'companyCommissionRuleId', ts.company_commission_rule_id,
+                               'companyCommissionRuleName', ccr.name,
+                               'companyCommissionType', ccr.commission_type,
+                               'companyCommissionRate', ccr.commission_rate
+                             )
+                           ELSE NULL
+                         END
+                       ) FILTER (WHERE ts.service_id IS NOT NULL),
+                       '[]'::json
+                     ) as services
+              FROM technicians t
+              LEFT JOIN technician_services ts ON t.id = ts.technician_id
+              LEFT JOIN company_commission_rules ccr ON ts.company_commission_rule_id = ccr.id
+              WHERE t.id = $1
+              GROUP BY t.id
+            `, [technicianId]);
+            if (technicianResult.rows.length > 0) {
+              const technicianData = {
+                id: technicianResult.rows[0].id,
+                employeeId: technicianResult.rows[0].employee_id,
+                countryId: technicianResult.rows[0].country_id,
+                hireDate: technicianResult.rows[0].hire_date,
+                status: technicianResult.rows[0].status,
+                services: technicianResult.rows[0].services || [],
+                createdAt: technicianResult.rows[0].created_at,
+                updatedAt: technicianResult.rows[0].updated_at
+              };
+              global.broadcastDataUpdate('technician-status-updated', technicianData);
+            }
+        }
+      }
+      
+      // 3. 释放房间资源（将房间状态设为available）
+      if (roomId) {
+        // 检查该房间是否还有其他进行中的订单
+        const otherRoomOrdersResult = await client.query(`
+          SELECT COUNT(*) as count 
+          FROM orders 
+          WHERE room_id = $1 
+          AND id != $2 
+          AND status = 'in_progress'
+        `, [roomId, id]);
+        
+        const otherRoomOrdersCount = parseInt(otherRoomOrdersResult.rows[0].count);
+        
+        // 如果没有其他进行中的订单，则将房间状态设为available
+        if (otherRoomOrdersCount === 0) {
+          await client.query(
+            'UPDATE rooms SET status = $1 WHERE id = $2',
+            ['available', roomId]
+          );
+          
+                      // 广播房间状态更新
+            const roomResult = await client.query(
+              'SELECT * FROM rooms WHERE id = $1',
+              [roomId]
+            );
+            if (roomResult.rows.length > 0) {
+              const roomData = {
+                id: roomResult.rows[0].id,
+                name: roomResult.rows[0].name,
+                status: roomResult.rows[0].status,
+                description: roomResult.rows[0].description,
+                isTemporary: roomResult.rows[0].is_temporary,
+                expiresAt: roomResult.rows[0].expires_at,
+                createdAt: roomResult.rows[0].created_at,
+                updatedAt: roomResult.rows[0].updated_at
+              };
+              global.broadcastDataUpdate('room-updated', roomData);
+            }
+        }
+      }
+      
+      // 4. 删除订单（会级联删除order_items）
+      await client.query('DELETE FROM orders WHERE id = $1', [id]);
+      
+      await client.query('COMMIT');
+      
+      // 广播订单删除事件
+      global.broadcastDataUpdate('order-deleted', { id });
+      
+      res.json({ message: '订单删除成功' });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-    
-    // 广播订单删除事件
-    global.broadcastDataUpdate('order-deleted', { id });
-    
-    res.json({ message: '订单删除成功' });
   } catch (error) {
     console.error('删除订单失败:', error);
     res.status(500).json({ error: error.message });

@@ -18,6 +18,7 @@ interface OrderRowProps {
   getStatusIcon: (status: OrderStatus) => any;
   onViewDetail: (order: Order) => void;
   onCancelOrder: (orderId: string) => void;
+  onDeleteOrder: (order: Order) => void;
 }
 
 const OrderRow = React.memo(function OrderRow({
@@ -30,7 +31,8 @@ const OrderRow = React.memo(function OrderRow({
   getStatusText,
   getStatusIcon,
   onViewDetail,
-  onCancelOrder
+  onCancelOrder,
+  onDeleteOrder
 }: OrderRowProps) {
   const StatusIcon = getStatusIcon(order.status);
 
@@ -127,13 +129,14 @@ const OrderRow = React.memo(function OrderRow({
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
         <div className="flex space-x-2 justify-center">
-          {order.status !== 'cancelled' && (
+          {/* 只对已完成或已取消的订单显示操作按钮 */}
+          {(order.status === 'completed' || order.status === 'cancelled') && (
             <button
-              onClick={() => onCancelOrder(order.id)}
+              onClick={() => onDeleteOrder(order)}
               className="text-red-600 hover:text-red-800 px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors"
-              title="取消订单"
+              title="删除订单"
             >
-              取消
+              删除
             </button>
           )}
         </div>

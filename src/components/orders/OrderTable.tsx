@@ -17,6 +17,7 @@ interface OrderTableProps {
   getStatusIcon: (status: OrderStatus) => any;
   onViewDetail: (order: Order) => void;
   onCancelOrder: (orderId: string) => void;
+  onDeleteOrder: (order: Order) => void;
   // 分页相关
   currentPage: number;
   pageSize: number;
@@ -39,6 +40,7 @@ const OrderTable = React.memo(function OrderTable({
   getStatusIcon,
   onViewDetail,
   onCancelOrder,
+  onDeleteOrder,
   currentPage,
   pageSize,
   totalOrders,
@@ -100,6 +102,7 @@ const OrderTable = React.memo(function OrderTable({
                 getStatusIcon={getStatusIcon}
                 onViewDetail={onViewDetail}
                 onCancelOrder={onCancelOrder}
+                onDeleteOrder={onDeleteOrder}
               />
             ))}
           </tbody>

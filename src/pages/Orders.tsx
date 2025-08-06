@@ -14,6 +14,7 @@ import OrderFilters from '../components/orders/OrderFilters';
 import OrderTable from '../components/orders/OrderTable';
 import OrderDetailModal from '../components/orders/OrderDetailModal';
 import CancelOrderModal from '../components/orders/CancelOrderModal';
+import DeleteOrderModal from '../components/orders/DeleteOrderModal';
 
 // 导入工具函数
 import { 
@@ -26,7 +27,7 @@ import {
 } from '../components/orders/orderUtils';
 
 export default function OrdersRefactored() {
-  const { orders, updateOrderStatus, updateOrder } = useOrderContext();
+  const { orders, updateOrderStatus, updateOrder, deleteOrder } = useOrderContext();
   const { serviceItems } = useServiceContext();
   const { technicians } = useTechnicianContext();
   const { rooms } = useRoomContext();
@@ -37,6 +38,8 @@ export default function OrdersRefactored() {
   const [cancelReason, setCancelReason] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderDetailModal, setShowOrderDetailModal] = useState(false);
+  const [deletingOrder, setDeletingOrder] = useState<Order | null>(null);
+  const [showDeleteOrderModal, setShowDeleteOrderModal] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '', type: 'error' as 'success' | 'error' | 'warning' });
   
   // 分页状态
@@ -103,6 +106,25 @@ export default function OrdersRefactored() {
     setSelectedOrder(order);
     setShowOrderDetailModal(true);
   }, []);
+
+  // 处理删除订单
+  const handleDeleteOrder = useCallback((order: Order) => {
+    setDeletingOrder(order);
+    setShowDeleteOrderModal(true);
+  }, []);
+
+  // 确认删除订单
+  const handleConfirmDeleteOrder = useCallback(async (orderId: string) => {
+    try {
+      await deleteOrder(orderId);
+      showNotification('订单删除成功', 'success');
+      setShowDeleteOrderModal(false);
+      setDeletingOrder(null);
+    } catch (error) {
+      console.error('删除订单失败:', error);
+      showNotification('删除订单失败，请重试', 'error');
+    }
+  }, [deleteOrder, showNotification]);
 
   // 筛选订单
   const filteredOrders = useMemo(() => {
@@ -224,6 +246,20 @@ export default function OrdersRefactored() {
         }}
       />
 
+      {/* 删除订单模态框 */}
+      <DeleteOrderModal
+        show={showDeleteOrderModal}
+        onClose={() => {
+          setShowDeleteOrderModal(false);
+          setDeletingOrder(null);
+        }}
+        onConfirmDelete={handleConfirmDeleteOrder}
+        deletingOrder={deletingOrder}
+        businessSettings={businessSettings}
+        getServiceName={getServiceNameWrapper}
+        getRoomName={getRoomNameWrapper}
+      />
+
       {/* 订单详情模态框 */}
       <OrderDetailModal
         show={showOrderDetailModal}
@@ -253,6 +289,7 @@ export default function OrdersRefactored() {
         getStatusIcon={getStatusIcon}
         onViewDetail={handleViewDetail}
         onCancelOrder={setCancellingOrderId}
+        onDeleteOrder={handleDeleteOrder}
         currentPage={currentPage}
         pageSize={pageSize}
         totalOrders={totalOrders}
