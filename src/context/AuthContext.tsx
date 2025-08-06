@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { buildApiUrl } from '../config/api';
 
 interface User {
   id: string;
@@ -72,7 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/auth/check?userId=${user.id}`);
+      const response = await fetch(buildApiUrl(`/auth/check?userId=${user.id}`));
       const data = await response.json();
       
       if (!data.success) {

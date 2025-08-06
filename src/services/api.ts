@@ -1,10 +1,8 @@
 // API服务层 - 替换localStorage的数据操作
+import { buildApiUrl } from '../config/api';
+
 const getApiUrl = (endpoint: string) => {
-  // 强制使用当前域名，但使用正确的端口
-  const currentOrigin = window.location.origin;
-  const baseUrl = currentOrigin.replace(':5173', ':3001');
-  const url = `${baseUrl}/api${endpoint}`;
-  return url;
+  return buildApiUrl(endpoint);
 };
 
 // 通用API请求函数
