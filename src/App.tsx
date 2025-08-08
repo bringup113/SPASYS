@@ -85,9 +85,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppProvider>
-        <AppContent />
-      </AppProvider>
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
     </AuthProvider>
   );
 }

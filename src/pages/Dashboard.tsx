@@ -9,6 +9,7 @@ import { Plus, Users } from 'lucide-react';
 import { OrderStatus, OrderItem, HandoverStatus } from '../types';
 import { CommissionCalculator } from '../utils/commissionUtils';
 import Notification from '../components/Notification';
+import { usePreventDoubleClick } from '../hooks/usePreventDoubleClick';
 import { 
   RoomCard, 
   StatsCards, 
@@ -96,9 +97,21 @@ export default function Dashboard() {
     setShowHandoverModal(true);
   }, [getPendingHandoverOrders, orders]);
 
+  // 交接班防重复点击Hook
+  const handoverClickHook = usePreventDoubleClick({
+    delay: 2000,
+    onSuccess: () => {
+      showNotification('交接班操作完成', 'success');
+    },
+    onError: (error) => {
+      console.error('交接班失败:', error);
+      showNotification('交接班失败，请重试', 'error');
+    }
+  });
+
   // 确认交接班
   const handleConfirmHandover = useCallback(async () => {
-    try {
+    await handoverClickHook.execute(async () => {
       const pendingOrders = getPendingHandoverOrders();
       
       // 批量更新订单的交接班状态
@@ -110,13 +123,9 @@ export default function Dashboard() {
         });
       }
       
-      showNotification(`成功交接 ${pendingOrders.length} 个订单`, 'success');
       setShowHandoverModal(false);
-    } catch (error) {
-      console.error('交接班失败:', error);
-      showNotification('交接班失败，请重试', 'error');
-    }
-  }, [getPendingHandoverOrders, updateOrder, showNotification]);
+    });
+  }, [handoverClickHook, getPendingHandoverOrders, updateOrder]);
 
   // 检查并删除过期的临时房间
   const checkExpiredRooms = useCallback(() => {
@@ -224,23 +233,33 @@ export default function Dashboard() {
     setShowDeleteItemModal(true);
   }, []);
 
+  // 删除项目防重复点击Hook
+  const deleteItemClickHook = usePreventDoubleClick({
+    delay: 1500,
+    onSuccess: () => {
+      showNotification('项目删除成功', 'success');
+    },
+    onError: () => {
+      showNotification('删除项目失败，请重试', 'error');
+    }
+  });
+
   // 确认删除项目
   const confirmDeleteItem = useCallback(async () => {
     if (!deletingItem || !currentOrder) return;
 
-    const { index, item } = deletingItem;
-    const updatedItems = currentOrder.items.filter((_: OrderItem, i: number) => i !== index);
-    const newTotal = updatedItems.reduce((sum: number, item: OrderItem) => sum + item.price, 0);
+    await deleteItemClickHook.execute(async () => {
+      const { index, item } = deletingItem;
+      const updatedItems = currentOrder.items.filter((_: OrderItem, i: number) => i !== index);
+      const newTotal = updatedItems.reduce((sum: number, item: OrderItem) => sum + item.price, 0);
 
-    // 检查是否是最后一个项目
-    const isLastItem = currentOrder.items.length === 1;
+      // 检查是否是最后一个项目
+      const isLastItem = currentOrder.items.length === 1;
 
-    try {
       if (isLastItem) {
         // 删除最后一个项目，取消整个订单
         await updateOrderStatus(currentOrder.id, 'cancelled');
         await updateRoom(currentOrder.roomId, { status: 'available' });
-        showNotification('已删除最后一个项目，订单已取消', 'success');
         setShowServiceManagementModal(false);
       } else {
         // 删除非最后一个项目，更新订单
@@ -248,7 +267,6 @@ export default function Dashboard() {
           items: updatedItems,
           totalAmount: newTotal
         });
-        showNotification('项目删除成功', 'success');
       }
 
       // 更新技师状态
@@ -275,10 +293,20 @@ export default function Dashboard() {
 
       setShowDeleteItemModal(false);
       setDeletingItem(null);
-    } catch (error) {
-      showNotification('删除项目失败，请重试', 'error');
+    });
+  }, [deleteItemClickHook, deletingItem, currentOrder, updateOrderStatus, updateRoom, updateOrder, orders, updateTechnicianStatus]);
+
+  // 结账防重复点击Hook
+  const checkoutClickHook = usePreventDoubleClick({
+    delay: 2000,
+    onSuccess: () => {
+      showNotification('结账成功！', 'success');
+    },
+    onError: () => {
+      console.error('结账失败');
+      showNotification('结账失败，请重试', 'error');
     }
-  }, [deletingItem, currentOrder, updateOrderStatus, updateRoom, showNotification, updateOrder, orders, updateTechnicianStatus]);
+  });
 
   // 处理结账（仅结账，不完成服务）
   const handleCheckout = useCallback(async () => {
@@ -293,7 +321,7 @@ export default function Dashboard() {
       return;
     }
 
-    try {
+    await checkoutClickHook.execute(async () => {
       // 使用实收金额，如果没有输入则使用换算后的金额
       const receivedAmount = parseFloat(checkoutData.receivedAmount);
 
@@ -353,13 +381,21 @@ export default function Dashboard() {
         ...prev,
         receivedAmount: receivedAmount.toString()
       }));
+    });
+  }, [checkoutClickHook, currentOrder, checkoutData, salespeople, companyCommissionRules, updateOrder]);
 
-      showNotification('结账成功！', 'success');
-    } catch (error) {
-      console.error('结账失败:', error);
-      showNotification('结账失败，请重试', 'error');
+  // 完成服务防重复点击Hook
+  const completeServiceClickHook = usePreventDoubleClick({
+    delay: 2000,
+    onSuccess: () => {
+      showNotification('服务完成成功！', 'success');
+      setShowServiceManagementModal(false);
+    },
+    onError: () => {
+      console.error('完成服务失败');
+      showNotification('完成服务失败，请重试', 'error');
     }
-  }, [currentOrder, checkoutData, salespeople, companyCommissionRules, updateOrder, showNotification]);
+  });
 
   // 处理完成服务
   const handleCompleteServiceOnly = useCallback(async () => {
@@ -375,7 +411,7 @@ export default function Dashboard() {
       return;
     }
 
-    try {
+    await completeServiceClickHook.execute(async () => {
       // 并行执行所有异步操作
       await Promise.all([
         // 更新订单状态为已完成
@@ -395,14 +431,22 @@ export default function Dashboard() {
         // 更新技师状态
         ...currentOrder.items.map((item: OrderItem) => item.technicianId ? updateTechnicianStatus(item.technicianId, 'available') : Promise.resolve())
       ]);
+    });
+  }, [completeServiceClickHook, currentOrder, updateOrder, rooms, deleteRoom, updateRoom, updateTechnicianStatus]);
 
-      showNotification('服务完成成功！', 'success');
+  // 完成服务并结账防重复点击Hook
+  const completeServiceAndCheckoutClickHook = usePreventDoubleClick({
+    delay: 2500,
+    onSuccess: () => {
+      showNotification('服务完成并结账成功！', 'success');
+      resetCheckoutState();
       setShowServiceManagementModal(false);
-    } catch (error) {
-      console.error('完成服务失败:', error);
+    },
+    onError: () => {
+      console.error('完成服务失败');
       showNotification('完成服务失败，请重试', 'error');
     }
-  }, [currentOrder, updateOrder, rooms, deleteRoom, updateRoom, updateTechnicianStatus, showNotification]);
+  });
 
   // 处理完成服务并结账
   const handleCompleteServiceAndCheckout = useCallback(async () => {
@@ -418,7 +462,7 @@ export default function Dashboard() {
       return;
     }
 
-    try {
+    await completeServiceAndCheckoutClickHook.execute(async () => {
       // 使用实收金额，如果没有输入则使用换算后的金额
       const receivedAmount = parseFloat(checkoutData.receivedAmount);
 
@@ -495,15 +539,8 @@ export default function Dashboard() {
         ...prev,
         receivedAmount: receivedAmount.toString()
       }));
-
-      showNotification('服务完成并结账成功！', 'success');
-      resetCheckoutState();
-      setShowServiceManagementModal(false);
-    } catch (error) {
-      console.error('完成服务失败:', error);
-      showNotification('完成服务失败，请重试', 'error');
-    }
-  }, [currentOrder, checkoutData, salespeople, companyCommissionRules, updateOrder, rooms, deleteRoom, updateRoom, updateTechnicianStatus, showNotification, resetCheckoutState]);
+    });
+  }, [completeServiceAndCheckoutClickHook, currentOrder, checkoutData, salespeople, companyCommissionRules, updateOrder, rooms, deleteRoom, updateRoom, updateTechnicianStatus, resetCheckoutState]);
 
   return (
     <div className="space-y-6">
@@ -522,10 +559,18 @@ export default function Dashboard() {
         <div className="flex space-x-3">
           <button
             onClick={handleHandoverClick}
-            className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center shadow-lg"
+            disabled={handoverClickHook.isLoading}
+            className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Users className="h-5 w-5 mr-2" />
-            交接班
+            {handoverClickHook.isLoading ? (
+              <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              <Users className="h-5 w-5 mr-2" />
+            )}
+            {handoverClickHook.isLoading ? '交接中...' : '交接班'}
             {getPendingHandoverOrders().length > 0 && (
               <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
                 {getPendingHandoverOrders().length}
