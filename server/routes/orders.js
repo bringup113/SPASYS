@@ -133,24 +133,72 @@ router.post('/orders', async (req, res) => {
       return res.status(400).json({ error: '房间ID不能为空' });
     }
     
-    // 生成订单号：当前日期+3位序号
+    // 生成订单号：根据业务设置时区生成时间 + 业务日订单序号
+    // 1. 获取业务设置
+    const businessSettingsResult = await global.pool.query(
+      'SELECT timezone, business_hours FROM business_settings WHERE id = $1',
+      ['default-settings']
+    );
+
+    const timezone = businessSettingsResult.rows[0]?.timezone || 'Asia/Shanghai';
+    const businessHours = businessSettingsResult.rows[0]?.business_hours || {};
+    const newDayStartTime = businessHours.newDayStartTime || '08:00';
+
+    // 2. 根据时区获取当前时间
     const now = new Date();
-    const year = now.getFullYear().toString();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    const hour = now.getHours().toString().padStart(2, '0');
-    const minute = now.getMinutes().toString().padStart(2, '0');
-    const second = now.getSeconds().toString().padStart(2, '0');
     
-    // 获取当天的订单数量作为序号
-    const today = `${year}${month}${day}`;
+    // 根据基础设置中的时区转换时间
+    // 这里需要根据实际设置的时区来计算偏移量
+    // 暂时使用简单的时区映射，实际应该使用更准确的时区库
+    let timezoneOffset = 0;
+    
+    if (timezone === 'Asia/Shanghai') {
+      timezoneOffset = 8 * 60 * 60 * 1000; // UTC+8
+    } else if (timezone === 'Asia/Bangkok') {
+      timezoneOffset = 7 * 60 * 60 * 1000; // UTC+7
+    } else if (timezone === 'UTC') {
+      timezoneOffset = 0; // UTC
+    } else if (timezone === 'America/New_York') {
+      timezoneOffset = -5 * 60 * 60 * 1000; // UTC-5
+    } else if (timezone === 'Europe/London') {
+      timezoneOffset = 0; // UTC
+    }
+    
+    const localTime = new Date(now.getTime() + timezoneOffset);
+
+    // 3. 计算业务日
+    const [startHour, startMinute] = newDayStartTime.split(':').map(Number);
+    const currentHour = localTime.getHours();
+    const currentMinute = localTime.getMinutes();
+
+    let businessDate;
+    if (currentHour > startHour || (currentHour === startHour && currentMinute >= startMinute)) {
+      // 业务日 = 今天
+      businessDate = new Date(localTime);
+    } else {
+      // 业务日 = 昨天
+      businessDate = new Date(localTime);
+      businessDate.setDate(businessDate.getDate() - 1);
+    }
+
+    // 4. 生成时间部分（使用转换后的本地时间）
+    const year = localTime.getUTCFullYear().toString();
+    const month = (localTime.getUTCMonth() + 1).toString().padStart(2, '0');
+    const day = localTime.getUTCDate().toString().padStart(2, '0');
+    const hour = localTime.getUTCHours().toString().padStart(2, '0');
+    const minute = localTime.getUTCMinutes().toString().padStart(2, '0');
+    const second = localTime.getUTCSeconds().toString().padStart(2, '0');
+
+    // 5. 查询业务日期间的所有订单数量（包含所有状态）
+    const businessDateStr = businessDate.toISOString().split('T')[0];
     const todayOrdersResult = await global.pool.query(
-      'SELECT COUNT(*) as count FROM orders WHERE DATE(created_at) = CURRENT_DATE',
-      []
+      `SELECT COUNT(*) as count FROM orders 
+       WHERE DATE(created_at) = $1`,
+      [businessDateStr]
     );
     const todayCount = parseInt(todayOrdersResult.rows[0].count);
     const sequence = (todayCount + 1).toString().padStart(3, '0');
-    
+
     const orderId = `${year}${month}${day}${hour}${minute}${second}${sequence}`;
     
     // 开始事务
