@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useOrderContext } from '../context/OrderContext';
 import { useSettingsContext } from '../context/SettingsContext';
-import { Calendar, DollarSign, Users, TrendingUp } from 'lucide-react';
+import { Calendar, DollarSign, Users, TrendingUp, Package } from 'lucide-react';
 import { getBusinessDateString, getBusinessDateStringForTime } from '../utils/timeUtils';
 import { formatCurrency } from '../utils/currencyUtils';
 
@@ -62,6 +62,7 @@ export default function StatisticsReport() {
     let totalCompanyCommission = 0;
     const technicianStats: { [technicianId: string]: any } = {};
     const salespersonStats: { [salespersonId: string]: any } = {};
+    const serviceStats: { [serviceId: string]: any } = {};
 
     periodOrders.forEach(order => {
       // 使用实收金额进行统计
@@ -157,6 +158,37 @@ export default function StatisticsReport() {
         salespersonStat.totalRevenue += itemStats.totalRevenue;
         salespersonStat.totalCommission += itemStats.totalCommission;
       });
+
+      // 服务项目统计
+      order.items.forEach(item => {
+        const serviceId = item.serviceId || 'unknown';
+        if (!serviceStats[serviceId]) {
+          serviceStats[serviceId] = {
+            serviceId: serviceId,
+            serviceName: item.serviceName || '未知服务',
+            orderCount: 0,
+            totalRevenue: 0,
+            totalTechnicianCommission: 0,
+            totalCompanyCommission: 0,
+            totalProfit: 0
+          };
+        }
+
+        serviceStats[serviceId].orderCount++;
+        
+        // 使用实收金额进行统计，按订单比例分配
+        const orderTotalPrice = order.items.reduce((sum, orderItem) => sum + orderItem.price, 0);
+        const itemRatio = orderTotalPrice > 0 ? item.price / orderTotalPrice : 1 / order.items.length;
+        const allocatedRevenue = (order.receivedAmount || 0) * itemRatio;
+        
+        serviceStats[serviceId].totalRevenue += allocatedRevenue;
+        serviceStats[serviceId].totalTechnicianCommission += item.technicianCommission;
+        serviceStats[serviceId].totalCompanyCommission += (item.companyCommissionAmount || 0);
+        
+        // 计算单个项目的利润
+        const itemProfit = allocatedRevenue - item.technicianCommission - (item.companyCommissionAmount || 0);
+        serviceStats[serviceId].totalProfit += itemProfit;
+      });
     });
 
     // 计算利润统计数据（直接从原始数据源获取，只计算利润）
@@ -172,6 +204,7 @@ export default function StatisticsReport() {
       
       return {
         id: order.id,
+        items: order.items,
         totalAmount: order.totalAmount,
         receivedAmount,
         companyCommissionAmount,
@@ -198,6 +231,7 @@ export default function StatisticsReport() {
       orderCount: periodOrders.length,
       technicianStats: Object.values(technicianStats),
       salespersonStats: Object.values(salespersonStats),
+      serviceStats: Object.values(serviceStats),
       profitStats,
       pagination: {
         currentPage,
@@ -296,6 +330,16 @@ export default function StatisticsReport() {
       totalCommission: statisticsReport.salespersonStats.reduce((sum, sales) => sum + sales.totalCommission, 0)
     };
   }, [statisticsReport.salespersonStats]);
+
+  const serviceStatsTotals = useMemo(() => {
+    return {
+      totalOrderCount: statisticsReport.serviceStats.reduce((sum, service) => sum + service.orderCount, 0),
+      totalRevenue: statisticsReport.serviceStats.reduce((sum, service) => sum + service.totalRevenue, 0),
+      totalTechnicianCommission: statisticsReport.serviceStats.reduce((sum, service) => sum + service.totalTechnicianCommission, 0),
+      totalCompanyCommission: statisticsReport.serviceStats.reduce((sum, service) => sum + service.totalCompanyCommission, 0),
+      totalProfit: statisticsReport.serviceStats.reduce((sum, service) => sum + service.totalProfit, 0)
+    };
+  }, [statisticsReport.serviceStats]);
 
   return (
     <div className="space-y-6">
@@ -420,13 +464,193 @@ export default function StatisticsReport() {
         </div>
       </div>
 
-      {/* 两列布局：利润统计 + 人员统计 */}
+      {/* 第一行：项目统计 + 技师统计 */}
+      <div className="grid grid-cols-7 gap-6">
+        {/* 左侧：项目统计 - 占5份 */}
+        <div className="col-span-5">
+          <div className="bg-white rounded-lg shadow" style={{ height: '650px' }}>
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                <Package className="h-5 w-5 mr-2 text-blue-600" />
+                项目统计
+              </h3>
+            </div>
+            <div className="flex flex-col" style={{ height: 'calc(650px - 80px)' }}>
+              {/* 固定表头 */}
+              <div className="bg-gray-50">
+                <table className="min-w-full" style={{ tableLayout: 'fixed' }}>
+                  <thead>
+                    <tr>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '20%' }}>
+                        服务项目
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '16%' }}>
+                        服务次数
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '16%' }}>
+                        实收金额
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '16%' }}>
+                        技师抽成
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '16%' }}>
+                        公司抽成
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '16%' }}>
+                        利润
+                      </th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+              {/* 可滚动数据区域 */}
+              <div className="overflow-y-auto flex-1">
+                <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {statisticsReport.serviceStats.map((service) => (
+                      <tr key={service.serviceId}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '20%' }}>
+                          {service.serviceName}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '16%' }}>
+                          {service.orderCount}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '16%' }}>
+                          {formatCurrency(service.totalRevenue, businessSettings)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '16%' }}>
+                          {formatCurrency(service.totalTechnicianCommission, businessSettings)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '16%' }}>
+                          {formatCurrency(service.totalCompanyCommission, businessSettings)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '16%' }}>
+                          <span className={(service.totalProfit || 0) < 0 ? 'text-red-600' : 'text-green-600'}>
+                            {formatCurrency(service.totalProfit || 0, businessSettings)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* 汇总行 - 固定在底部 */}
+              <div className="border-t border-gray-200 bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
+                  <tbody className="bg-gray-50 divide-y divide-gray-200">
+                    <tr className="font-semibold">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '20%' }}>
+                        总计
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '16%' }}>
+                        {serviceStatsTotals.totalOrderCount}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '16%' }}>
+                        {formatCurrency(serviceStatsTotals.totalRevenue, businessSettings)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '16%' }}>
+                        {formatCurrency(serviceStatsTotals.totalTechnicianCommission, businessSettings)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '16%' }}>
+                        {formatCurrency(serviceStatsTotals.totalCompanyCommission, businessSettings)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '16%' }}>
+                        <span className={serviceStatsTotals.totalProfit < 0 ? 'text-red-600' : 'text-green-600'}>
+                          {formatCurrency(serviceStatsTotals.totalProfit, businessSettings)}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 右侧：技师统计 - 占2份 */}
+        <div className="col-span-2">
+          <div className="bg-white rounded-lg shadow" style={{ height: '650px' }}>
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">技师统计</h3>
+            </div>
+            <div className="flex flex-col" style={{ height: 'calc(650px - 80px)' }}>
+              {/* 固定表头 */}
+              <div className="bg-gray-50">
+                <table className="min-w-full" style={{ tableLayout: 'fixed' }}>
+                  <thead>
+                    <tr>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '30%' }}>
+                        技师姓名
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '20%' }}>
+                        上钟数
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '25%' }}>
+                        营业额
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '25%' }}>
+                        抽成金额
+                      </th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+              {/* 可滚动数据区域 */}
+              <div className="overflow-y-auto flex-1">
+                <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {statisticsReport.technicianStats.map((tech) => (
+                      <tr key={tech.technicianId}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '30%' }}>
+                          {tech.technicianName}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '20%' }}>
+                          {tech.orderCount}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
+                          {formatCurrency(tech.totalRevenue, businessSettings)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
+                          {formatCurrency(tech.totalCommission, businessSettings)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* 汇总行 - 固定在底部 */}
+              <div className="border-t border-gray-200 bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
+                  <tbody className="bg-gray-50 divide-y divide-gray-200">
+                    <tr className="font-semibold">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '30%' }}>
+                        总计
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '20%' }}>
+                        {technicianStatsTotals.totalOrderCount}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
+                        {formatCurrency(technicianStatsTotals.totalRevenue, businessSettings)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
+                        {formatCurrency(technicianStatsTotals.totalCommission, businessSettings)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 第二行：利润统计 + 销售员统计 */}
       <div className="grid grid-cols-7 gap-6">
         {/* 左侧：利润统计 - 占5份 */}
         <div className="col-span-5">
           <div className="bg-white rounded-lg shadow" style={{ height: '650px' }}>
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900">利润统计</h3>
+              <h3 className="text-lg font-medium text-gray-900">订单详情</h3>
               {/* 分页控件 */}
               {statisticsReport.pagination && (
                 <div className="flex items-center space-x-2">
@@ -456,25 +680,31 @@ export default function StatisticsReport() {
                 <table className="min-w-full" style={{ tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '20%' }}>
                         订单号
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10%' }}>
+                        服务项目
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10%' }}>
+                        技师名称
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10%' }}>
                         应收金额
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10%' }}>
                         实收金额
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10%' }}>
                         技师抽成
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10%' }}>
                         销售员抽成
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10%' }}>
                         公司抽成
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14.28%' }}>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10%' }}>
                         利润
                       </th>
                     </tr>
@@ -487,25 +717,31 @@ export default function StatisticsReport() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {statisticsReport.profitStats?.map((order) => (
                       <tr key={order.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '14.28%' }}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '20%' }}>
                           {order.id}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
+                          {order.items?.map(item => item.serviceName).join(', ') || '未知服务'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
+                          {order.items?.map(item => item.technicianName).join(', ') || '未知技师'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
                           {formatCurrency(order.totalAmount, businessSettings)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
                           {formatCurrency(order.receivedAmount || 0, businessSettings)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
                           {formatCurrency(order.totalTechnicianCommission, businessSettings)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
                           {formatCurrency(order.totalSalespersonCommission, businessSettings)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
                           {formatCurrency(order.companyCommissionAmount || 0, businessSettings)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
                           <span className={(order.profit || 0) < 0 ? 'text-red-600' : 'text-green-600'}>
                             {formatCurrency(order.profit || 0, businessSettings)}
                           </span>
@@ -516,61 +752,64 @@ export default function StatisticsReport() {
                 </table>
               </div>
               {/* 汇总行 - 固定在底部 */}
-              {statisticsReport.profitStats && statisticsReport.profitStats.length > 0 && (
-                <div className="border-t border-gray-200 bg-gray-50">
-                  <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
-                    <tbody className="bg-gray-50 divide-y divide-gray-200">
-                      <tr className="font-semibold">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '14.28%' }}>
-                          总计
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(profitStatsTotals.totalAmount, businessSettings)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(profitStatsTotals.receivedAmount, businessSettings)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(profitStatsTotals.totalTechnicianCommission, businessSettings)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(profitStatsTotals.totalSalespersonCommission, businessSettings)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          {formatCurrency(profitStatsTotals.companyCommissionAmount, businessSettings)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '14.28%' }}>
-                          <span className={profitStatsTotals.totalProfit < 0 ? 'text-red-600' : 'text-green-600'}>
-                            {formatCurrency(profitStatsTotals.totalProfit, businessSettings)}
-                          </span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <div className="border-t border-gray-200 bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
+                  <tbody className="bg-gray-50 divide-y divide-gray-200">
+                    <tr className="font-semibold">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '20%' }}>
+                        总计
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
+                        -
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
+                        -
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
+                        {formatCurrency(profitStatsTotals.totalAmount, businessSettings)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
+                        {formatCurrency(profitStatsTotals.receivedAmount, businessSettings)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
+                        {formatCurrency(profitStatsTotals.totalTechnicianCommission, businessSettings)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
+                        {formatCurrency(profitStatsTotals.totalSalespersonCommission, businessSettings)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
+                        {formatCurrency(profitStatsTotals.companyCommissionAmount, businessSettings)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '10%' }}>
+                        <span className={profitStatsTotals.totalProfit < 0 ? 'text-red-600' : 'text-green-600'}>
+                          {formatCurrency(profitStatsTotals.totalProfit, businessSettings)}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 右侧：人员统计 - 占2份 */}
-        <div className="col-span-2 space-y-6">
-          {/* 技师统计 */}
-          <div className="bg-white rounded-lg shadow" style={{ height: 'calc((650px - 24px) / 2)' }}>
+        {/* 右侧：销售员统计 - 占2份 */}
+        <div className="col-span-2">
+          <div className="bg-white rounded-lg shadow" style={{ height: '650px' }}>
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">技师统计</h3>
+              <h3 className="text-lg font-medium text-gray-900">销售员统计</h3>
             </div>
-            <div className="flex flex-col" style={{ height: 'calc((650px - 24px) / 2 - 80px)' }}>
+            <div className="flex flex-col" style={{ height: 'calc(650px - 80px)' }}>
               {/* 固定表头 */}
               <div className="bg-gray-50">
                 <table className="min-w-full" style={{ tableLayout: 'fixed' }}>
                   <thead>
                     <tr>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '25%' }}>
-                        技师姓名
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '30%' }}>
+                        销售员姓名
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '25%' }}>
-                        上钟数
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '20%' }}>
+                        订单数
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '25%' }}>
                         营业额
@@ -586,128 +825,48 @@ export default function StatisticsReport() {
               <div className="overflow-y-auto flex-1">
                 <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {statisticsReport.technicianStats.map((tech) => (
-                      <tr key={tech.technicianId}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '25%' }}>
-                          {tech.technicianName}
+                    {statisticsReport.salespersonStats.map((sales) => (
+                      <tr key={sales.salespersonId}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '30%' }}>
+                          {sales.salespersonName}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '20%' }}>
+                          {sales.orderCount}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                          {tech.orderCount}
+                          {formatCurrency(sales.totalRevenue, businessSettings)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                          {formatCurrency(tech.totalRevenue, businessSettings)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                          {formatCurrency(tech.totalCommission, businessSettings)}
+                          {formatCurrency(sales.totalCommission, businessSettings)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-                              {/* 汇总行 - 固定在底部 */}
-                {statisticsReport.technicianStats.length > 0 && (
-                  <div className="border-t border-gray-200 bg-gray-50">
-                    <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
-                      <tbody className="bg-gray-50 divide-y divide-gray-200">
-                        <tr className="font-semibold">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '25%' }}>
-                            总计
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                            {technicianStatsTotals.totalOrderCount}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                            {formatCurrency(technicianStatsTotals.totalRevenue, businessSettings)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                            {formatCurrency(technicianStatsTotals.totalCommission, businessSettings)}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+              {/* 汇总行 - 固定在底部 */}
+              <div className="border-t border-gray-200 bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
+                  <tbody className="bg-gray-50 divide-y divide-gray-200">
+                    <tr className="font-semibold">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '30%' }}>
+                        总计
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '20%' }}>
+                        {salespersonStatsTotals.totalOrderCount}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
+                        {formatCurrency(salespersonStatsTotals.totalRevenue, businessSettings)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
+                        {formatCurrency(salespersonStatsTotals.totalCommission, businessSettings)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-
-          {/* 销售员统计 */}
-          {statisticsReport.salespersonStats.length > 0 && (
-            <div className="bg-white rounded-lg shadow" style={{ height: 'calc((650px - 24px) / 2)' }}>
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900">销售员统计</h3>
-              </div>
-                              <div className="flex flex-col" style={{ height: 'calc((650px - 24px) / 2 - 80px)' }}>
-                  {/* 固定表头 */}
-                  <div className="bg-gray-50">
-                    <table className="min-w-full" style={{ tableLayout: 'fixed' }}>
-                      <thead>
-                        <tr>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '25%' }}>
-                            销售员姓名
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '25%' }}>
-                            订单数
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '25%' }}>
-                            营业额
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '25%' }}>
-                            抽成金额
-                          </th>
-                        </tr>
-                      </thead>
-                    </table>
-                  </div>
-                  {/* 可滚动数据区域 */}
-                  <div className="overflow-y-auto flex-1">
-                    <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {statisticsReport.salespersonStats.map((sales) => (
-                          <tr key={sales.salespersonId}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '25%' }}>
-                              {sales.salespersonName}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                              {sales.orderCount}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                              {formatCurrency(sales.totalRevenue, businessSettings)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                              {formatCurrency(sales.totalCommission, businessSettings)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                {/* 汇总行 - 固定在底部 */}
-                {statisticsReport.salespersonStats.length > 0 && (
-                  <div className="border-t border-gray-200 bg-gray-50">
-                    <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
-                      <tbody className="bg-gray-50 divide-y divide-gray-200">
-                        <tr className="font-semibold">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center" style={{ width: '25%' }}>
-                            总计
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                            {salespersonStatsTotals.totalOrderCount}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                            {formatCurrency(salespersonStatsTotals.totalRevenue, businessSettings)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center" style={{ width: '25%' }}>
-                            {formatCurrency(salespersonStatsTotals.totalCommission, businessSettings)}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
