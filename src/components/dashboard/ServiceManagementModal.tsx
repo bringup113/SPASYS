@@ -205,7 +205,7 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
       setCheckoutData({
         customerName: currentOrder?.customerName || '',
         selectedSalespersonId: currentOrder?.items?.[0]?.salespersonId || '',
-        receivedAmount: currentOrder?.receivedAmount ? currentOrder?.receivedAmount.toString() : currentOrder?.totalAmount?.toString() || '0'
+        receivedAmount: currentOrder?.receivedAmount ? currentOrder?.receivedAmount.toString() : ''
       });
       setIsCheckoutMode(true);
     });
