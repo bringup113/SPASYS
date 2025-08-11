@@ -701,49 +701,51 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
           </div>
         </div>
 
-        {/* 底部操作按钮 */}
-        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-                                  房间: {selectedRoom.name} | 客户: {currentOrder?.customerName || '散客'}
-            </div>
-            <div className="flex space-x-3">
-              {/* 取消按钮 */}
-              <button
-                onClick={handleCancel}
-                className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                取消
-              </button>
-              
-              {/* 完成并结账按钮 */}
-              <button
-                onClick={handleFinishAndCheckout}
-                disabled={finishAndCheckoutClickHook.isLoading}
-                className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {finishAndCheckoutClickHook.isLoading ? (
-                  <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <CreditCard className="h-4 w-4 mr-2" />
-                )}
-                {finishAndCheckoutClickHook.isLoading ? '处理中...' : '完成并结账'}
-              </button>
-              
-              {/* 完成按钮 */}
-              <button
-                onClick={handleFinish}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                完成
-              </button>
-            </div>
-          </div>
-        </div>
+                 {/* 底部操作按钮 - 只在非结账模式下显示 */}
+         {!isCheckoutMode && (
+           <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+             <div className="flex justify-between items-center">
+               <div className="text-sm text-gray-600">
+                                     房间: {selectedRoom.name} | 客户: {currentOrder?.customerName || '散客'}
+               </div>
+               <div className="flex space-x-3">
+                 {/* 取消按钮 */}
+                 <button
+                   onClick={handleCancel}
+                   className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                 >
+                   取消
+                 </button>
+                 
+                 {/* 完成并结账按钮 */}
+                 <button
+                   onClick={handleFinishAndCheckout}
+                   disabled={finishAndCheckoutClickHook.isLoading}
+                   className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                 >
+                   {finishAndCheckoutClickHook.isLoading ? (
+                     <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                     </svg>
+                   ) : (
+                     <CreditCard className="h-4 w-4 mr-2" />
+                   )}
+                   {finishAndCheckoutClickHook.isLoading ? '处理中...' : '完成并结账'}
+                 </button>
+                 
+                 {/* 完成按钮 */}
+                 <button
+                   onClick={handleFinish}
+                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                 >
+                   <CheckCircle className="h-4 w-4 mr-2" />
+                   完成
+                 </button>
+               </div>
+             </div>
+           </div>
+         )}
       </div>
     </div>
   );
