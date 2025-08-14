@@ -6,6 +6,14 @@ import { CompanyCommissionRule, OrderItem } from '../types';
  */
 export class CommissionCalculator {
   /**
+   * 四舍五入到整数
+   * @param value 要四舍五入的数值
+   * @returns 四舍五入后的整数
+   */
+  private static roundToInteger(value: number): number {
+    return Math.round(value);
+  }
+  /**
    * 计算销售员佣金
    * @param item 订单项目
    * @param salesperson 销售员信息
@@ -23,8 +31,9 @@ export class CommissionCalculator {
       // 固定抽成：每个项目固定金额
       return salesperson.commissionRate;
     } else if (salesperson.commissionType === 'percentage') {
-      // 比例抽成：按项目价格比例，需要考虑折扣率
-      return (item.price * salesperson.commissionRate / 100) * discountRate;
+      // 比例抽成：按项目价格比例，需要考虑折扣率，四舍五入到整数
+      const commission = (item.price * salesperson.commissionRate / 100) * discountRate;
+      return this.roundToInteger(commission);
     }
 
     return 0;
@@ -50,12 +59,14 @@ export class CommissionCalculator {
     const itemReceivedAmount = item.price * discountRate;
 
     if (companyCommissionRule.commissionType === 'revenue') {
-      // 销售额抽成：项目实收金额 × 公司抽成比例
-      return itemReceivedAmount * companyCommissionRule.commissionRate / 100;
+      // 销售额抽成：项目实收金额 × 公司抽成比例，四舍五入到整数
+      const commission = itemReceivedAmount * companyCommissionRule.commissionRate / 100;
+      return this.roundToInteger(commission);
     } else if (companyCommissionRule.commissionType === 'profit') {
-      // 利润抽成：(项目实收金额 - 技师抽成 - 销售员抽成) × 公司抽成比例
+      // 利润抽成：(项目实收金额 - 技师抽成 - 销售员抽成) × 公司抽成比例，四舍五入到整数
       const itemProfit = itemReceivedAmount - (item.technicianCommission || 0) - (item.salespersonCommission || 0);
-      return itemProfit * companyCommissionRule.commissionRate / 100;
+      const commission = itemProfit * companyCommissionRule.commissionRate / 100;
+      return this.roundToInteger(commission);
     }
 
     return 0;
