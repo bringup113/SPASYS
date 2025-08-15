@@ -8,6 +8,7 @@ router.get('/orders', async (req, res) => {
       SELECT o.*, 
              json_agg(
                json_build_object(
+                 'id', oi.id,
                  'serviceId', oi.service_id,
                  'serviceName', oi.service_name,
                  'technicianId', oi.technician_id,
@@ -21,7 +22,9 @@ router.get('/orders', async (req, res) => {
                  'companyCommissionRuleName', oi.company_commission_rule_name,
                  'companyCommissionType', oi.company_commission_type,
                  'companyCommissionRate', oi.company_commission_rate,
-                 'companyCommissionAmount', oi.company_commission_amount
+                 'companyCommissionAmount', oi.company_commission_amount,
+                 'status', oi.status,
+                 'completedAt', oi.completed_at
                ) ORDER BY oi.id
              ) as items
       FROM orders o
@@ -65,6 +68,7 @@ router.get('/orders/:id', async (req, res) => {
       SELECT o.*, 
              json_agg(
                json_build_object(
+                 'id', oi.id,
                  'serviceId', oi.service_id,
                  'serviceName', oi.service_name,
                  'technicianId', oi.technician_id,
@@ -78,7 +82,9 @@ router.get('/orders/:id', async (req, res) => {
                  'companyCommissionRuleName', oi.company_commission_rule_name,
                  'companyCommissionType', oi.company_commission_type,
                  'companyCommissionRate', oi.company_commission_rate,
-                 'companyCommissionAmount', oi.company_commission_amount
+                 'companyCommissionAmount', oi.company_commission_amount,
+                 'status', oi.status,
+                 'completedAt', oi.completed_at
                ) ORDER BY oi.id
              ) as items
       FROM orders o
@@ -224,13 +230,13 @@ router.post('/orders', async (req, res) => {
             order_id, service_id, service_name, technician_id, technician_name,
             price, technician_commission, salesperson_id, salesperson_name, salesperson_commission,
             company_commission_rule_id, company_commission_rule_name, company_commission_type, company_commission_rate,
-            company_commission_amount
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            company_commission_amount, status
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         `, [
           orderId, item.serviceId, item.serviceName, item.technicianId, item.technicianName,
           item.price, item.technicianCommission, item.salespersonId, item.salespersonName, null,
           item.companyCommissionRuleId, item.companyCommissionRuleName, item.companyCommissionType, item.companyCommissionRate,
-          item.companyCommissionAmount || 0
+          item.companyCommissionAmount || 0, 'in_progress'
         ]);
       }
       
@@ -241,6 +247,7 @@ router.post('/orders', async (req, res) => {
         SELECT o.*, 
                json_agg(
                  json_build_object(
+                   'id', oi.id,
                    'serviceId', oi.service_id,
                    'serviceName', oi.service_name,
                    'technicianId', oi.technician_id,
@@ -254,7 +261,9 @@ router.post('/orders', async (req, res) => {
                    'companyCommissionRuleName', oi.company_commission_rule_name,
                    'companyCommissionType', oi.company_commission_type,
                    'companyCommissionRate', oi.company_commission_rate,
-                   'companyCommissionAmount', oi.company_commission_amount
+                   'companyCommissionAmount', oi.company_commission_amount,
+                   'status', oi.status,
+                   'completedAt', oi.completed_at
                  ) ORDER BY oi.id
                ) as items
         FROM orders o
@@ -392,13 +401,13 @@ router.put('/orders/:id', async (req, res) => {
               order_id, service_id, service_name, technician_id, technician_name,
               price, technician_commission, salesperson_id, salesperson_name, salesperson_commission,
               company_commission_rule_id, company_commission_rule_name, company_commission_type, company_commission_rate,
-              company_commission_amount
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+              company_commission_amount, status
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
           `, [
             id, item.serviceId, item.serviceName, item.technicianId, item.technicianName,
             item.price, item.technicianCommission, item.salespersonId, item.salespersonName, item.salespersonCommission,
             item.companyCommissionRuleId, item.companyCommissionRuleName, item.companyCommissionType, item.companyCommissionRate,
-            item.companyCommissionAmount || 0
+            item.companyCommissionAmount || 0, item.status || 'in_progress'
           ]);
         }
       }
@@ -410,6 +419,7 @@ router.put('/orders/:id', async (req, res) => {
         SELECT o.*, 
                json_agg(
                  json_build_object(
+                   'id', oi.id,
                    'serviceId', oi.service_id,
                    'serviceName', oi.service_name,
                    'technicianId', oi.technician_id,
@@ -423,7 +433,9 @@ router.put('/orders/:id', async (req, res) => {
                    'companyCommissionRuleName', oi.company_commission_rule_name,
                    'companyCommissionType', oi.company_commission_type,
                    'companyCommissionRate', oi.company_commission_rate,
-                   'companyCommissionAmount', oi.company_commission_amount
+                   'companyCommissionAmount', oi.company_commission_amount,
+                   'status', oi.status,
+                   'completedAt', oi.completed_at
                  ) ORDER BY oi.id
                ) as items
         FROM orders o
@@ -498,6 +510,7 @@ router.patch('/orders/:id/status', async (req, res) => {
       SELECT o.*, 
              json_agg(
                json_build_object(
+                 'id', oi.id,
                  'serviceId', oi.service_id,
                  'serviceName', oi.service_name,
                  'technicianId', oi.technician_id,
@@ -511,7 +524,9 @@ router.patch('/orders/:id/status', async (req, res) => {
                  'companyCommissionRuleName', oi.company_commission_rule_name,
                  'companyCommissionType', oi.company_commission_type,
                  'companyCommissionRate', oi.company_commission_rate,
-                 'companyCommissionAmount', oi.company_commission_amount
+                 'companyCommissionAmount', oi.company_commission_amount,
+                 'status', oi.status,
+                 'completedAt', oi.completed_at
                ) ORDER BY oi.id
              ) as items
       FROM orders o
@@ -571,7 +586,8 @@ router.delete('/orders/:id', async (req, res) => {
         SELECT o.*, 
                json_agg(
                  json_build_object(
-                   'technicianId', oi.technician_id
+                   'technicianId', oi.technician_id,
+                   'status', oi.status
                  ) ORDER BY oi.id
                ) as items
         FROM orders o
@@ -716,6 +732,206 @@ router.delete('/orders/:id', async (req, res) => {
     }
   } catch (error) {
     console.error('删除订单失败:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 完成单个服务项目
+router.patch('/orders/:orderId/items/:itemId/complete', async (req, res) => {
+  try {
+    const { orderId, itemId } = req.params;
+    
+    // 开始事务
+    const client = await global.pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // 1. 获取要完成的服务项目信息，包括技师ID
+      const itemResult = await client.query(`
+        SELECT technician_id FROM order_items 
+        WHERE id = $1 AND order_id = $2
+      `, [itemId, orderId]);
+      
+      if (itemResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: '服务项目不存在' });
+      }
+      
+      const technicianId = itemResult.rows[0].technician_id;
+      
+      // 2. 更新服务项目状态为已完成
+      const updateItemResult = await client.query(`
+        UPDATE order_items 
+        SET status = 'completed', completed_at = NOW() 
+        WHERE id = $1 AND order_id = $2
+        RETURNING *
+      `, [itemId, orderId]);
+      
+      // 3. 检查订单是否所有项目都已完成
+      const checkOrderResult = await client.query(`
+        SELECT COUNT(*) as total, 
+               COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed
+        FROM order_items 
+        WHERE order_id = $1
+      `, [orderId]);
+      
+      const { total, completed } = checkOrderResult.rows[0];
+      
+      // 4. 如果所有项目都完成，更新订单状态
+      if (parseInt(total) === parseInt(completed)) {
+        await client.query(`
+          UPDATE orders 
+          SET status = 'completed', completed_at = NOW() 
+          WHERE id = $1
+        `, [orderId]);
+      }
+      
+      // 5. 直接释放技师状态为可用
+      if (technicianId) {
+        console.log(`技师 ${technicianId} 服务完成，准备更新状态为 available`);
+        
+        // 先查询技师当前状态
+        const currentStatusResult = await client.query(
+          'SELECT status FROM technicians WHERE id = $1',
+          [technicianId]
+        );
+        
+        if (currentStatusResult.rows.length > 0) {
+          const currentStatus = currentStatusResult.rows[0].status;
+          console.log(`技师 ${technicianId} 当前状态: ${currentStatus}`);
+        }
+        
+        // 更新技师状态
+        const updateResult = await client.query(
+          'UPDATE technicians SET status = $1 WHERE id = $2 RETURNING *',
+          ['available', technicianId]
+        );
+        
+        if (updateResult.rows.length > 0) {
+          console.log(`技师 ${technicianId} 状态更新成功，新状态: ${updateResult.rows[0].status}`);
+        } else {
+          console.log(`技师 ${technicianId} 状态更新失败，没有返回结果`);
+        }
+        
+        // 广播技师状态更新
+        const technicianResult = await client.query(`
+          SELECT t.*, 
+                 COALESCE(
+                   json_agg(
+                     CASE 
+                       WHEN ts.service_id IS NOT NULL THEN
+                         json_build_object(
+                           'serviceId', ts.service_id,
+                           'price', ts.price,
+                           'commission', ts.commission,
+                           'companyCommissionRuleId', ts.company_commission_rule_id,
+                           'companyCommissionRuleName', ccr.name,
+                           'companyCommissionType', ccr.commission_type,
+                           'companyCommissionRate', ccr.commission_rate
+                         )
+                       ELSE NULL
+                     END
+                   ) FILTER (WHERE ts.service_id IS NOT NULL),
+                   '[]'::json
+                 ) as services
+          FROM technicians t
+          LEFT JOIN technician_services ts ON t.id = ts.technician_id
+          LEFT JOIN company_commission_rules ccr ON ts.company_commission_rule_id = ccr.id
+          WHERE t.id = $1
+          GROUP BY t.id
+        `, [technicianId]);
+        
+        if (technicianResult.rows.length > 0) {
+          const technicianData = {
+            id: technicianResult.rows[0].id,
+            employeeId: technicianResult.rows[0].employee_id,
+            countryId: technicianResult.rows[0].country_id,
+            hireDate: technicianResult.rows[0].hire_date,
+            status: technicianResult.rows[0].status,
+            services: technicianResult.rows[0].services || [],
+            createdAt: technicianResult.rows[0].created_at,
+            updatedAt: technicianResult.rows[0].updated_at
+          };
+          global.broadcastDataUpdate('technician-status-updated', technicianData);
+          console.log(`技师 ${technicianId} 状态更新广播已发送，广播状态: ${technicianData.status}`);
+        } else {
+          console.log(`技师 ${technicianId} 查询失败，无法发送广播`);
+        }
+      }
+      
+      // 6. 获取更新后的订单信息
+      const orderResult = await client.query(`
+        SELECT o.*, 
+               json_agg(
+                 json_build_object(
+                   'id', oi.id,
+                   'serviceId', oi.service_id,
+                   'serviceName', oi.service_name,
+                   'technicianId', oi.technician_id,
+                   'technicianName', oi.technician_name,
+                   'price', oi.price,
+                   'technicianCommission', oi.technician_commission,
+                   'salespersonId', oi.salesperson_id,
+                   'salespersonName', oi.salesperson_name,
+                   'salespersonCommission', oi.salesperson_commission,
+                   'companyCommissionRuleId', oi.company_commission_rule_id,
+                   'companyCommissionRuleName', oi.company_commission_rule_name,
+                   'companyCommissionType', oi.company_commission_type,
+                   'companyCommissionRate', oi.company_commission_rate,
+                   'companyCommissionAmount', oi.company_commission_amount,
+                   'status', oi.status,
+                   'completedAt', oi.completed_at
+                 ) ORDER BY oi.id
+               ) as items
+        FROM orders o
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.id = $1
+        GROUP BY o.id
+      `, [orderId]);
+      
+      if (orderResult.rows.length > 0) {
+        const order = orderResult.rows[0];
+        const orderData = {
+          id: order.id,
+          roomId: order.room_id,
+          roomName: order.room_name,
+          customerName: order.customer_name,
+          customerPhone: order.customer_phone,
+          status: order.status,
+          handoverStatus: order.handover_status,
+          items: order.items || [],
+          totalAmount: parseFloat(order.total_amount),
+          receivedAmount: order.received_amount ? parseFloat(order.received_amount) : undefined,
+          discountRate: order.discount_rate ? parseFloat(order.discount_rate) : undefined,
+          createdAt: order.created_at,
+          updatedAt: order.updated_at,
+          completedAt: order.completed_at,
+          handoverAt: order.handover_at,
+          notes: order.notes
+        };
+        
+        // 广播订单更新事件
+        global.broadcastDataUpdate('order-updated', orderData);
+      }
+      
+      await client.query('COMMIT');
+      
+      res.json({ 
+        message: '服务项目完成成功',
+        orderId,
+        itemId,
+        status: 'completed'
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('完成服务项目失败:', error);
     res.status(500).json({ error: error.message });
   }
 });

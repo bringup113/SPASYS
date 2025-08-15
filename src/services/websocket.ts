@@ -3,6 +3,7 @@ import io from 'socket.io-client';
 class WebSocketService {
   private socket: any = null;
   private listeners: Map<string, Function[]> = new Map();
+  private connectionListeners: Function[] = [];
 
   // 连接到WebSocket服务器
   connect() {
@@ -18,10 +19,12 @@ class WebSocketService {
 
     this.socket.on('connect', () => {
       // WebSocket连接成功
+      this.notifyConnectionListeners(true);
     });
 
     this.socket.on('disconnect', () => {
       // WebSocket连接断开
+      this.notifyConnectionListeners(false);
     });
 
     this.socket.on('data-update', (data: any) => {
@@ -60,12 +63,30 @@ class WebSocketService {
     }
   }
 
+  // 添加连接状态监听器
+  onConnectionChange(callback: Function) {
+    this.connectionListeners.push(callback);
+  }
+
+  // 移除连接状态监听器
+  offConnectionChange(callback: Function) {
+    const index = this.connectionListeners.indexOf(callback);
+    if (index > -1) {
+      this.connectionListeners.splice(index, 1);
+    }
+  }
+
   // 通知所有监听器
   private notifyListeners(event: string, data: any) {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach(callback => callback(data));
     }
+  }
+
+  // 通知所有连接状态监听器
+  private notifyConnectionListeners(connected: boolean) {
+    this.connectionListeners.forEach(callback => callback(connected));
   }
 
   // 获取连接状态

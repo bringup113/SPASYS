@@ -32,6 +32,7 @@ interface ServiceManagementModalProps {
   getServiceName: (serviceId: string, serviceNameSnapshot?: string) => string;
   getTechnicianName: (technicianId: string) => string;
   handleDeleteItem: (index: number, item: OrderItem) => void;
+  handleCompleteServiceItem: (item: OrderItem) => Promise<void>;
   handleCheckout: () => Promise<void>;
   handleCompleteServiceOnly: () => Promise<void>;
   handleCompleteServiceAndCheckout: () => Promise<void>;
@@ -65,6 +66,7 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
   getServiceName,
   getTechnicianName,
   handleDeleteItem,
+  handleCompleteServiceItem,
   handleCheckout,
   handleCompleteServiceAndCheckout,
   checkoutData,
@@ -132,7 +134,8 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
       companyCommissionRuleId: serviceAssignment.companyCommissionRuleId,
       companyCommissionRuleName: companyCommissionRule?.name,
       companyCommissionType: companyCommissionRule?.commissionType,
-      companyCommissionRate: companyCommissionRule?.commissionRate
+      companyCommissionRate: companyCommissionRule?.commissionRate,
+      status: 'pending' // 新添加的服务项目默认为等待中状态
     };
     
     const updatedItems = [...(currentOrder?.items || []), newItem];
@@ -184,16 +187,34 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
         setCurrentOrder(createdOrder);
       } else {
         // 如果订单已存在，更新订单项目到数据库
+        // 将等待中的服务项目状态改为服务中
+        const updatedItems = currentOrder.items.map((item: OrderItem) => ({
+          ...item,
+          status: item.status === 'pending' ? 'in_progress' : item.status
+        }));
+        
         await updateOrder(currentOrder?.id, {
-          items: currentOrder?.items || [],
+          items: updatedItems,
           totalAmount: currentOrder?.totalAmount || 0
         });
         
-        // 更新所有相关技师状态为忙碌
+        // 更新技师状态：只有技师有进行中的服务项目时才设置为忙碌
         await Promise.all(
-          (currentOrder?.items || []).map((item: OrderItem) => 
-            item.technicianId ? updateTechnicianStatus(item.technicianId, 'busy') : Promise.resolve()
-          )
+          updatedItems.map(async (item: OrderItem) => {
+            if (!item.technicianId) return Promise.resolve();
+            
+            // 检查该技师在当前订单中是否还有其他进行中的服务项目
+            const hasInProgressItems = updatedItems.some((otherItem: OrderItem) => 
+              otherItem.technicianId === item.technicianId && 
+              otherItem.status === 'in_progress'
+            );
+            
+            // 如果有进行中的项目，设置为忙碌；如果都是已完成，不改变状态
+            if (hasInProgressItems) {
+              return updateTechnicianStatus(item.technicianId, 'busy');
+            }
+            return Promise.resolve();
+          })
         );
       }
       
@@ -251,16 +272,34 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
     } else {
       // 如果订单已存在，更新订单项目到数据库
       try {
+        // 将等待中的服务项目状态改为服务中
+        const updatedItems = currentOrder.items.map((item: OrderItem) => ({
+          ...item,
+          status: item.status === 'pending' ? 'in_progress' : item.status
+        }));
+        
         await updateOrder(currentOrder?.id, {
-          items: currentOrder?.items || [],
+          items: updatedItems,
           totalAmount: currentOrder?.totalAmount || 0
         });
         
-        // 更新所有相关技师状态为忙碌
+        // 更新技师状态：只有技师有进行中的服务项目时才设置为忙碌
         await Promise.all(
-          (currentOrder?.items || []).map((item: OrderItem) => 
-            item.technicianId ? updateTechnicianStatus(item.technicianId, 'busy') : Promise.resolve()
-          )
+          updatedItems.map(async (item: OrderItem) => {
+            if (!item.technicianId) return Promise.resolve();
+            
+            // 检查该技师在当前订单中是否还有其他进行中的服务项目
+            const hasInProgressItems = updatedItems.some((otherItem: OrderItem) => 
+              otherItem.technicianId === item.technicianId && 
+              otherItem.status === 'in_progress'
+            );
+            
+            // 如果有进行中的项目，设置为忙碌；如果都是已完成，不改变状态
+            if (hasInProgressItems) {
+              return updateTechnicianStatus(item.technicianId, 'busy');
+            }
+            return Promise.resolve();
+          })
         );
       } catch (error) {
         console.error('更新订单失败:', error);
@@ -327,8 +366,22 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center mb-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                        <div className={`w-3 h-3 rounded-full mr-3 ${
+                          item.status === 'completed' ? 'bg-green-500' : 
+                          item.status === 'in_progress' ? 'bg-blue-500' : 
+                          'bg-yellow-500'
+                        }`}></div>
                         <h5 className="font-semibold text-gray-900 text-lg">{getServiceName(item.serviceId, item.serviceName)}</h5>
+                        {/* 状态标签 */}
+                        <span className={`ml-3 px-2 py-1 rounded-full text-xs font-medium ${
+                          item.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                          item.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {item.status === 'completed' ? '已完成' : 
+                           item.status === 'in_progress' ? '服务中' : 
+                           '等待中'}
+                        </span>
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
@@ -340,14 +393,34 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
                           <span className="ml-2 font-bold text-green-600">{formatCurrency(item.price, businessSettings)}</span>
                         </div>
                       </div>
+                      {/* 完成时间显示 */}
+                      {item.status === 'completed' && item.completedAt && (
+                        <div className="mt-2 text-xs text-gray-500">
+                          <span>完成时间: {new Date(item.completedAt).toLocaleString('zh-CN')}</span>
+                        </div>
+                      )}
                     </div>
-                    <button
-                      onClick={() => handleDeleteItem(index, item)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-full transition-colors"
-                      title="移除服务"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
+                    <div className="flex flex-col items-end space-y-2">
+                      {/* 完成服务按钮 */}
+                      {item.status === 'in_progress' && (
+                        <button
+                          onClick={() => handleCompleteServiceItem(item)}
+                          className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center"
+                          title="完成服务"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          完成服务
+                        </button>
+                      )}
+                      {/* 删除按钮 */}
+                      <button
+                        onClick={() => handleDeleteItem(index, item)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-full transition-colors"
+                        title="移除服务"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -651,7 +724,6 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
                     <div className="space-y-3">
                       <button
                         onClick={() => {
-                          console.log('🔍 结账按钮被点击');
                           if (!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0) {
                             showNotification('请输入实收金额', 'error');
                             return;
@@ -673,7 +745,6 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
                       </button>
                       <button
                         onClick={() => {
-                          console.log('🔍 完成服务并结账按钮被点击');
                           if (!checkoutData.receivedAmount || parseFloat(checkoutData.receivedAmount) === 0) {
                             showNotification('请输入实收金额', 'error');
                             return;

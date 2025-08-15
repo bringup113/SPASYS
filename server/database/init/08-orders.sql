@@ -33,12 +33,14 @@ CREATE TABLE IF NOT EXISTS order_items (
   technician_commission DECIMAL(10,2) NOT NULL DEFAULT 0, -- 技师提成金额快照，用于计算技师收入
   salesperson_id VARCHAR(50),                    -- 销售员ID，关联salespeople表，可能为NULL
   salesperson_name VARCHAR(100),                 -- 销售员姓名快照，用于提成计算
-  salesperson_commission DECIMAL(10,2),          -- 销售员提成金额快照，用于财务统计
+  salesperson_commission DECIMAL(10,2),          -- 销售员抽成金额快照，用于财务统计
   company_commission_rule_id VARCHAR(50),        -- 该服务项目使用的公司分成方案ID，关联company_commission_rules表
   company_commission_rule_name VARCHAR(100),     -- 公司分成方案名称快照
   company_commission_type VARCHAR(20),           -- 公司抽成类型快照：none、revenue、profit
   company_commission_rate DECIMAL(5,2),          -- 公司抽成比例快照
   company_commission_amount DECIMAL(10,2),       -- 公司抽成金额快照（结账时计算）
+  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed')), -- 服务项目状态：pending(等待中)、in_progress(服务中)、completed(已完成)
+  completed_at TIMESTAMP,                        -- 服务项目完成时间，用于统计技师工作时间和客户满意度
   created_at TIMESTAMP DEFAULT NOW(),            -- 记录创建时间，用于统计和审计
   updated_at TIMESTAMP DEFAULT NOW(),            -- 记录最后更新时间，用于数据同步
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE, -- 外键约束，订单删除时级联删除项目

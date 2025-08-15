@@ -10,6 +10,7 @@ import { OrderStatus, OrderItem, HandoverStatus } from '../types';
 import { CommissionCalculator } from '../utils/commissionUtils';
 import Notification from '../components/Notification';
 import { usePreventDoubleClick } from '../hooks/usePreventDoubleClick';
+import { orderAPI } from '../services/api';
 import { 
   RoomCard, 
   StatsCards, 
@@ -79,23 +80,22 @@ export default function Dashboard() {
 
   // 获取待交接的订单
   const getPendingHandoverOrders = useCallback(() => {
-    console.log('所有订单:', orders);
     const pendingOrders = orders?.filter(order => {
-      console.log('订单ID:', order.id, '状态:', order.status, '交接班状态:', order.handoverStatus);
       // 获取所有未交接的订单（进行中和已完成），排除已取消的订单
       return order.status !== 'cancelled' && order.handoverStatus === 'pending';
     }) || [];
-    console.log('待交接订单:', pendingOrders);
     return pendingOrders;
   }, [orders]);
 
   // 处理交接班按钮点击
   const handleHandoverClick = useCallback(() => {
     const pendingOrders = getPendingHandoverOrders();
-    console.log('点击交接班按钮，待交接订单数量:', pendingOrders.length);
-    console.log('所有非取消订单:', orders?.filter(order => order.status !== 'cancelled'));
-    setShowHandoverModal(true);
-  }, [getPendingHandoverOrders, orders]);
+    if (pendingOrders.length > 0) {
+      setShowHandoverModal(true);
+    } else {
+      showNotification('没有待交接的订单', 'warning');
+    }
+  }, [getPendingHandoverOrders, showNotification]);
 
   // 交接班防重复点击Hook
   const handoverClickHook = usePreventDoubleClick({
@@ -232,6 +232,55 @@ export default function Dashboard() {
     setDeletingItem({ index, item });
     setShowDeleteItemModal(true);
   }, []);
+
+  // 处理完成服务项目
+  const handleCompleteServiceItem = useCallback(async (item: OrderItem) => {
+    if (!currentOrder || !item.id) {
+      showNotification('无法完成服务项目', 'error');
+      return;
+    }
+
+    try {
+      // 调用API完成服务项目
+      await orderAPI.completeItem(currentOrder.id, item.id);
+      
+      // 更新技师状态为可用（确保状态同步）
+      if (item.technicianId) {
+        await updateTechnicianStatus(item.technicianId, 'available');
+      }
+      
+      // 更新本地状态
+      setCurrentOrder((prev: any) => {
+        if (!prev) return prev;
+        
+        const updatedItems = prev.items.map((orderItem: OrderItem) => {
+          if (orderItem.id === item.id) {
+            return {
+              ...orderItem,
+              status: 'completed' as const,
+              completedAt: new Date().toISOString()
+            };
+          }
+          return orderItem;
+        });
+
+        // 检查是否所有项目都已完成
+        const allCompleted = updatedItems.every((orderItem: OrderItem) => orderItem.status === 'completed');
+        
+        return {
+          ...prev,
+          items: updatedItems,
+          status: allCompleted ? 'completed' : prev.status,
+          completedAt: allCompleted ? new Date().toISOString() : prev.completedAt
+        };
+      });
+
+      showNotification('服务项目完成成功', 'success');
+    } catch (error) {
+      console.error('完成服务项目失败:', error);
+      showNotification('完成服务项目失败，请重试', 'error');
+    }
+  }, [currentOrder, showNotification, updateTechnicianStatus]);
 
   // 删除项目防重复点击Hook
   const deleteItemClickHook = usePreventDoubleClick({
@@ -397,9 +446,8 @@ export default function Dashboard() {
     }
   });
 
-  // 处理完成服务
+  // 处理仅完成服务
   const handleCompleteServiceOnly = useCallback(async () => {
-    console.log('🔍 仅完成服务函数被调用');
     if (!currentOrder) {
       showNotification('没有可完成的订单', 'error');
       return;
@@ -450,7 +498,6 @@ export default function Dashboard() {
 
   // 处理完成服务并结账
   const handleCompleteServiceAndCheckout = useCallback(async () => {
-    console.log('🔍 完成服务并结账函数被调用');
     if (!currentOrder) {
       showNotification('没有可完成的订单', 'error');
       return;
@@ -497,7 +544,9 @@ export default function Dashboard() {
           salespersonId: checkoutData.selectedSalespersonId || null,
           salespersonName: salesperson?.name || null,
           salespersonCommission: itemCommission,
-          companyCommissionAmount: itemCompanyCommission
+          companyCommissionAmount: itemCompanyCommission,
+          status: 'completed', // 完成服务并结账时，所有服务项目状态都设为已完成
+          completedAt: new Date().toISOString() // 设置完成时间
         };
       });
 
@@ -540,7 +589,7 @@ export default function Dashboard() {
         receivedAmount: receivedAmount.toString()
       }));
     });
-  }, [completeServiceAndCheckoutClickHook, currentOrder, checkoutData, salespeople, companyCommissionRules, updateOrder, rooms, deleteRoom, updateRoom, updateTechnicianStatus, resetCheckoutState]);
+  }, [completeServiceAndCheckoutClickHook, currentOrder, checkoutData, salespeople, companyCommissionRules, updateOrder, rooms, deleteRoom, updateRoom, updateTechnicianStatus, resetCheckoutState, setShowServiceManagementModal]);
 
   return (
     <div className="space-y-6">
@@ -637,6 +686,7 @@ export default function Dashboard() {
         getServiceName={getServiceName}
         getTechnicianName={getTechnicianName}
         handleDeleteItem={handleDeleteItem}
+        handleCompleteServiceItem={handleCompleteServiceItem}
         handleCheckout={handleCheckout}
         handleCompleteServiceOnly={handleCompleteServiceOnly}
         handleCompleteServiceAndCheckout={handleCompleteServiceAndCheckout}

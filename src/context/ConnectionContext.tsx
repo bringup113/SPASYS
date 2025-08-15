@@ -61,10 +61,11 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       }));
     };
 
-    websocketService.on('connection-change', handleConnectionChange);
+    // 使用新的连接状态监听
+    websocketService.onConnectionChange(handleConnectionChange);
 
     return () => {
-      websocketService.off('connection-change', handleConnectionChange);
+      websocketService.offConnectionChange(handleConnectionChange);
     };
   }, []);
 

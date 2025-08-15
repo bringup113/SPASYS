@@ -34,7 +34,7 @@ const RoomCard = React.memo(function RoomCard({ room, onRoomClick, currentOrder 
     if (currentOrder && currentOrder.status === 'in_progress') {
       const timer = setInterval(() => {
         const now = new Date().getTime();
-        const startTime = new Date(currentOrder.updatedAt).getTime();
+        const startTime = new Date(currentOrder.createdAt).getTime();
         const totalDuration = currentOrder.items.reduce((total: number, item: OrderItem) => {
           const service = serviceItems?.find((s: any) => s.id === item.serviceId);
           return total + (service?.duration || 0);

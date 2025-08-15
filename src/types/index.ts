@@ -64,6 +64,7 @@ export type HandoverStatus = 'pending' | 'handed_over' | 'confirmed';
 
 // 订单项目类型
 export interface OrderItem {
+  id?: string; // 服务项目ID（数据库中的主键）
   serviceId: string;
   serviceName?: string; // 服务项目名称（保存时的快照）
   technicianId?: string; // 技师ID（可选）
@@ -78,6 +79,8 @@ export interface OrderItem {
   companyCommissionType?: string; // 公司抽成类型快照
   companyCommissionRate?: number; // 公司抽成比例快照
   companyCommissionAmount?: number; // 公司抽成金额（结账时计算）
+  status: 'pending' | 'in_progress' | 'completed'; // 服务项目状态：pending(等待中)、in_progress(服务中)、completed(已完成)
+  completedAt?: string; // 服务项目完成时间
 }
 
 // 订单类型

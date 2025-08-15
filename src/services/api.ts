@@ -175,6 +175,9 @@ export const orderAPI = {
     method: 'PATCH',
     body: JSON.stringify({ status }),
   }),
+  completeItem: (orderId: string, itemId: string) => apiRequest<{ message: string; orderId: string; itemId: string; status: string }>(`/orders/${orderId}/items/${itemId}/complete`, {
+    method: 'PATCH',
+  }),
 };
 
 // 业务设置相关API

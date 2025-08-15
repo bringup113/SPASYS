@@ -1,7 +1,78 @@
 const fs = require('fs');
 const path = require('path');
+const { Pool } = require('pg');
 
 // 数据迁移脚本 - 从localStorage迁移到PostgreSQL
+
+// 数据库连接配置
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME || 'spa_system',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'password',
+});
+
+async function migrateDatabase() {
+  const client = await pool.connect();
+  
+  try {
+    console.log('开始数据库迁移...');
+    
+    // 检查order_items表是否存在status字段
+    const checkStatusColumn = await client.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'order_items' AND column_name = 'status'
+    `);
+    
+    if (checkStatusColumn.rows.length === 0) {
+      console.log('添加status字段...');
+      await client.query(`
+        ALTER TABLE order_items 
+        ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'in_progress' 
+        CHECK (status IN ('pending', 'in_progress', 'completed'))
+      `);
+      console.log('status字段添加成功');
+    } else {
+      console.log('status字段已存在');
+    }
+    
+    // 检查order_items表是否存在completed_at字段
+    const checkCompletedAtColumn = await client.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'order_items' AND column_name = 'completed_at'
+    `);
+    
+    if (checkCompletedAtColumn.rows.length === 0) {
+      console.log('添加completed_at字段...');
+      await client.query(`
+        ALTER TABLE order_items 
+        ADD COLUMN completed_at TIMESTAMP
+      `);
+      console.log('completed_at字段添加成功');
+    } else {
+      console.log('completed_at字段已存在');
+    }
+    
+    // 更新现有订单项目的状态
+    console.log('更新现有订单项目状态...');
+    await client.query(`
+      UPDATE order_items 
+      SET status = 'in_progress' 
+      WHERE status IS NULL OR status = ''
+    `);
+    
+    console.log('数据库迁移完成！');
+    
+  } catch (error) {
+    console.error('数据库迁移失败:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 // 读取localStorage数据（从浏览器导出的JSON文件）
 function readLocalStorageData(filePath) {
@@ -255,5 +326,6 @@ module.exports = {
   validateData,
   generateMigrationSQL,
   generateAPICalls,
-  generateJSMigrationScript
+  generateJSMigrationScript,
+  migrateDatabase
 }; 

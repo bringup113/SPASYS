@@ -129,6 +129,8 @@ CREATE TABLE IF NOT EXISTS order_items (
   company_commission_type VARCHAR(20),           -- 公司抽成类型快照：none、revenue、profit
   company_commission_rate DECIMAL(5,2),          -- 公司抽成比例快照
   company_commission_amount DECIMAL(10,2),       -- 公司抽成金额快照（结账时计算）
+  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed')), -- 服务项目状态：pending(等待中)、in_progress(服务中)、completed(已完成)
+  completed_at TIMESTAMP,                        -- 服务项目完成时间，用于统计技师工作时间和客户满意度
   created_at TIMESTAMP DEFAULT NOW(),            -- 记录创建时间
   updated_at TIMESTAMP DEFAULT NOW(),            -- 记录最后更新时间
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
