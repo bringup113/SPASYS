@@ -15,6 +15,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - spa-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d spa_system"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   # pgAdmin数据库管理工具
@@ -55,12 +60,13 @@ services:
     command: >
       sh -c "
         apk add --no-cache git &&
+        rm -rf /tmp/spa &&
         git clone https://github.com/bringup113/SPASYS.git /tmp/spa &&
         cp -r /tmp/spa/server/* . &&
         rm -rf /tmp/spa &&
         npm install --only=production &&
-        echo '等待数据库启动...' &&
-        sleep 15 &&
+        echo '等待数据库和Redis启动...' &&
+        sleep 20 &&
         echo '初始化数据库...' &&
         node init-db.js &&
         echo '启动服务器...' &&
@@ -79,8 +85,10 @@ services:
     networks:
       - spa-network
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
 
   # 前端应用
@@ -91,7 +99,10 @@ services:
     command: >
       sh -c "
         apk add --no-cache git &&
-        git clone https://github.com/bringup113/SPASYS.git . &&
+        rm -rf /tmp/spa &&
+        git clone https://github.com/bringup113/SPASYS.git /tmp/spa &&
+        cp -r /tmp/spa/* . &&
+        rm -rf /tmp/spa &&
         npm install &&
         npm run dev -- --host 0.0.0.0
       "
