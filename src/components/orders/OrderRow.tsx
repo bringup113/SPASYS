@@ -129,12 +129,12 @@ const OrderRow = React.memo(function OrderRow({
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
         <div className="flex space-x-2 justify-center">
-          {/* 只对已完成或已取消的订单显示操作按钮 */}
-          {(order.status === 'completed' || order.status === 'cancelled') && (
+          {/* 允许对进行中/已完成/已取消订单执行删除（删除会在后端释放房间/技师资源） */}
+          {(['in_progress', 'completed', 'cancelled'] as const).includes(order.status) && (
             <button
               onClick={() => onDeleteOrder(order)}
               className="text-red-600 hover:text-red-800 px-2 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors"
-              title="删除订单"
+              title="删除订单（会释放房间/技师占用）"
             >
               删除
             </button>

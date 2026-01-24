@@ -60,6 +60,12 @@ const DeleteOrderModal: React.FC<DeleteOrderModalProps> = ({
             <p className="text-sm text-gray-600 mb-4">
               您确定要删除以下订单吗？此操作将永久删除该订单及其所有相关数据。
             </p>
+
+            {deletingOrder.status === 'in_progress' && (
+              <p className="text-sm text-orange-700 mb-4">
+                注意：删除进行中的订单将尝试释放房间与技师占用（若该房间/技师没有其它进行中订单占用）。
+              </p>
+            )}
             
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="space-y-2">
