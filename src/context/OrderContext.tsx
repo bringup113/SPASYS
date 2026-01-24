@@ -46,10 +46,22 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const handleDataUpdate = (data: any) => {
       switch (data.type) {
         case 'order-created':
-          setState((prev: OrderState) => ({
-            ...prev,
-            orders: [...prev.orders, data.data]
-          }));
+          // 防止“接口返回 + websocket广播”导致同一订单被追加两次
+          setState((prev: OrderState) => {
+            const incoming: Order = data.data;
+            const exists = prev.orders.some((o: Order) => o.id === incoming.id);
+            if (exists) {
+              // 如果已存在，用最新数据覆盖（避免旧数据残留）
+              return {
+                ...prev,
+                orders: prev.orders.map((o: Order) => (o.id === incoming.id ? incoming : o)),
+              };
+            }
+            return {
+              ...prev,
+              orders: [...prev.orders, incoming],
+            };
+          });
           break;
         case 'order-updated':
           setState((prev: OrderState) => ({
@@ -86,10 +98,20 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const addOrder = useCallback(async (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       const createdOrder = await orderAPI.create(order);
-      setState((prev: OrderState) => ({
-        ...prev,
-        orders: [...prev.orders, createdOrder]
-      }));
+      // 防止重复追加（例如 websocket 同步到达）
+      setState((prev: OrderState) => {
+        const exists = prev.orders.some((o: Order) => o.id === createdOrder.id);
+        if (exists) {
+          return {
+            ...prev,
+            orders: prev.orders.map((o: Order) => (o.id === createdOrder.id ? createdOrder : o)),
+          };
+        }
+        return {
+          ...prev,
+          orders: [...prev.orders, createdOrder],
+        };
+      });
       return createdOrder;
     } catch (error) {
       console.error('❌ 创建订单失败:', error);

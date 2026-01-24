@@ -94,6 +94,18 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
     }
   });
 
+  // 完成（不结账）防重复点击Hook：避免创建订单被触发两次
+  const finishClickHook = usePreventDoubleClick({
+    delay: 2000,
+    onSuccess: () => {
+      showNotification('订单创建成功', 'success');
+    },
+    onError: () => {
+      console.error('创建订单失败');
+      showNotification('创建订单失败，请重试', 'error');
+    }
+  });
+
   // 结账防重复点击Hook
   const checkoutClickHook = usePreventDoubleClick({
     delay: 1500,
@@ -239,9 +251,9 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
       return;
     }
     
-    // 如果是临时订单，先创建真实订单
-    if (currentOrder?.id?.startsWith('temp-')) {
-      try {
+    await finishClickHook.execute(async () => {
+      // 如果是临时订单，先创建真实订单
+      if (currentOrder?.id?.startsWith('temp-')) {
         const newOrder = {
           roomId: currentOrder?.roomId,
           roomName: currentOrder?.roomName,
@@ -264,14 +276,8 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
         );
         
         setCurrentOrder(createdOrder);
-      } catch (error) {
-        console.error('创建订单失败:', error);
-        showNotification('创建订单失败，请重试', 'error');
-        return;
-      }
-    } else {
-      // 如果订单已存在，更新订单项目到数据库
-      try {
+      } else {
+        // 如果订单已存在，更新订单项目到数据库
         // 将等待中的服务项目状态改为服务中
         const updatedItems = currentOrder.items.map((item: OrderItem) => ({
           ...item,
@@ -301,19 +307,15 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
             return Promise.resolve();
           })
         );
-      } catch (error) {
-        console.error('更新订单失败:', error);
-        showNotification('更新订单失败，请重试', 'error');
-        return;
       }
-    }
+    });
     
     // 重置所有选择状态并关闭模态框
     setSelectedService(null);
     setModalStep('service');
     setIsCheckoutMode(false);
     onClose();
-  }, [currentOrder, addOrder, updateRoom, updateOrder, updateTechnicianStatus, showNotification, setCurrentOrder, setSelectedService, setModalStep, setIsCheckoutMode, onClose]);
+  }, [currentOrder, finishClickHook, addOrder, updateRoom, updateOrder, updateTechnicianStatus, showNotification, setCurrentOrder, setSelectedService, setModalStep, setIsCheckoutMode, onClose]);
 
   // 处理取消
   const handleCancel = useCallback(() => {
@@ -808,10 +810,11 @@ const ServiceManagementModal = React.memo(function ServiceManagementModal({
                  {/* 完成按钮 */}
                  <button
                    onClick={handleFinish}
-                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                   disabled={finishClickHook.isLoading || finishAndCheckoutClickHook.isLoading}
+                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                  >
                    <CheckCircle className="h-4 w-4 mr-2" />
-                   完成
+                   {finishClickHook.isLoading ? '处理中...' : '完成'}
                  </button>
                </div>
              </div>
